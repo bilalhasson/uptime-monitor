@@ -1,6 +1,6 @@
 # Uptime Monitor
 
-A Django application that monitors website uptime by periodically checking URLs and recording results.
+A Django application that monitors website uptime by periodically checking URLs and recording results. Sends email notifications via [Resend](https://resend.com) when a monitor goes down or recovers.
 
 ## Prerequisites
 
@@ -42,6 +42,22 @@ celery -A uptime_monitor beat --loglevel=info
 # To stop Redis
 docker compose down
 ```
+
+## Email notifications
+
+Email alerts are sent via [Resend](https://resend.com) when a monitor transitions
+between **up** and **down** states. The first check (pending to up/down) is silent.
+
+Set these environment variables to enable notifications:
+
+```
+RESEND_API_KEY     = <your Resend API key>
+DEFAULT_FROM_EMAIL = "UptimeMonitor <noreply@yourdomain.com>"
+```
+
+When `RESEND_API_KEY` is empty (the default), notifications are skipped and a
+warning is logged. Monitor owners must have an email address on their user
+account to receive alerts.
 
 ## Credentials
 

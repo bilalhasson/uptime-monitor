@@ -5,14 +5,17 @@ from celery import shared_task
 from django.utils import timezone
 
 from .models import CheckLog, Monitor
+from .notifications import send_monitor_down_email, send_monitor_recovery_email
 
 
 @shared_task
 def check_monitor(monitor_id):
     try:
-        monitor = Monitor.objects.get(pk=monitor_id)
+        monitor = Monitor.objects.select_related("owner").get(pk=monitor_id)
     except Monitor.DoesNotExist:
         return
+
+    previous_status = monitor.current_status
 
     status_code = None
     response_time_ms = None
@@ -49,10 +52,22 @@ def check_monitor(monitor_id):
     )
 
     new_status = Monitor.Status.UP if success else Monitor.Status.DOWN
+    now = timezone.now()
     Monitor.objects.filter(pk=monitor_id).update(
         current_status=new_status,
-        last_checked_at=timezone.now(),
+        last_checked_at=now,
     )
+
+    # Update in-memory instance so notification functions see current values
+    monitor.current_status = new_status
+    monitor.last_checked_at = now
+
+    # Notify on real transitions only (skip initial pending → up/down)
+    if previous_status != new_status and previous_status != Monitor.Status.PENDING:
+        if new_status == Monitor.Status.DOWN:
+            send_monitor_down_email(monitor)
+        elif new_status == Monitor.Status.UP:
+            send_monitor_recovery_email(monitor)
 
 
 @shared_task

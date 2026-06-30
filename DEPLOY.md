@@ -15,16 +15,18 @@ This project deploys as **5 components** from this single GitHub repo:
 1. **Add databases** — in the project canvas: **+ New → Database → PostgreSQL**, then **→ Redis**.
 2. **web service variables** (Variables tab):
    ```
-   SECRET_KEY   = <unique per project — see Credentials>
-   DEBUG        = False
-   DATABASE_URL = ${{Postgres.DATABASE_URL}}
-   REDIS_URL    = ${{Redis.REDIS_URL}}
+   SECRET_KEY       = <unique per project — see Credentials>
+   DEBUG            = False
+   DATABASE_URL     = ${{Postgres.DATABASE_URL}}
+   REDIS_URL        = ${{Redis.REDIS_URL}}
+   RESEND_API_KEY   = <Resend API key — see Credentials>
+   DEFAULT_FROM_EMAIL = "UptimeMonitor <noreply@yourdomain.com>"
    ```
    `RAILWAY_PUBLIC_DOMAIN` is injected automatically — `ALLOWED_HOSTS` and
    `CSRF_TRUSTED_ORIGINS` pick it up in `settings.py`.
 3. **worker service** — **+ New → GitHub Repo** (same repo), then:
    - Settings → Deploy → Custom Start Command: `celery -A uptime_monitor worker --loglevel=info`
-   - Variables: `DATABASE_URL`, `REDIS_URL` (same references as web), and `C_FORCE_ROOT = true`
+   - Variables: `DATABASE_URL`, `REDIS_URL`, `RESEND_API_KEY`, and `C_FORCE_ROOT = true`
 4. **beat service** — same again:
    - Custom Start Command: `celery -A uptime_monitor beat --loglevel=info`
    - Variables: `DATABASE_URL`, `REDIS_URL`, and `C_FORCE_ROOT = true`
@@ -49,6 +51,9 @@ under Nixpacks.)
 Production secrets are stored in **Bitwarden** under a `deploy/<project>` item
 — that vault is the source of truth for recovery and rotation. Conventions:
 
+- **`RESEND_API_KEY`** — obtain from the [Resend dashboard](https://resend.com).
+  Required on the **web** and **worker** services for email notifications.
+  Without it notifications are silently skipped.
 - **Unique `SECRET_KEY` per project** — never reuse across apps. Generate with:
   ```
   python3 -c "import secrets; print(secrets.token_urlsafe(50))"
