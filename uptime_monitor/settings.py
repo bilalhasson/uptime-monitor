@@ -150,6 +150,10 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+# Cap prefork workers: Celery otherwise forks one process per CPU (Railway
+# reports many cores), and each child loads a full Django app — enough to OOM
+# the container. Checks are I/O-bound HTTP requests, so a small pool is plenty.
+CELERY_WORKER_CONCURRENCY = int(os.environ.get("CELERY_WORKER_CONCURRENCY", "4"))
 CELERY_BEAT_SCHEDULE = {
     "check-all-monitors-every-minute": {
         "task": "monitors.tasks.check_all_monitors",
