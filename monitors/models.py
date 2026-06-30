@@ -25,3 +25,27 @@ class Monitor(models.Model):
 
     def __str__(self):
         return self.url
+
+
+class CheckLog(models.Model):
+    monitor = models.ForeignKey(
+        Monitor, on_delete=models.CASCADE, related_name="check_logs"
+    )
+    status_code = models.PositiveSmallIntegerField(null=True, blank=True)
+    response_time_ms = models.PositiveIntegerField(null=True, blank=True)
+    success = models.BooleanField()
+    error_message = models.CharField(max_length=255, blank=True, default="")
+    checked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-checked_at"]
+        indexes = [
+            models.Index(
+                fields=["monitor", "-checked_at"],
+                name="checklog_monitor_checked",
+            ),
+        ]
+
+    def __str__(self):
+        status = "OK" if self.success else "FAIL"
+        return f"{self.monitor} — {status} @ {self.checked_at}"

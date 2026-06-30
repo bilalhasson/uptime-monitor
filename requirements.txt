@@ -3,3 +3,6 @@ gunicorn==26.0.0
 dj-database-url==3.1.2
 whitenoise==6.12.0
 psycopg2-binary==2.9.12
+celery==5.4.0
+redis==5.2.1
+requests==2.32.3
