@@ -42,3 +42,11 @@ celery -A uptime_monitor beat --loglevel=info
 # To stop Redis
 docker compose down
 ```
+
+## Credentials
+
+Production secrets (e.g. `SECRET_KEY`) are stored in **Bitwarden** under the
+`deploy/uptime-monitor` item — that vault is the source of truth for recovery
+and rotation. Live values are set as environment variables on Railway and are
+never committed to this repo. `DATABASE_URL` and `REDIS_URL` are provided by
+Railway's Postgres/Redis plugins, not stored in the vault.
