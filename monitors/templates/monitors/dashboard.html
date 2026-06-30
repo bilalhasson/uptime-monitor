@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Uptime Monitor{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+{% if monitors %}
+<table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+  <thead>
+    <tr style="text-align:left; border-bottom:2px solid #e0e0e0;">
+      <th style="padding:0.5rem;">URL</th>
+      <th style="padding:0.5rem;">Status</th>
+      <th style="padding:0.5rem;">Last Checked</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for monitor in monitors %}
+    <tr style="border-bottom:1px solid #e0e0e0;">
+      <td style="padding:0.5rem;">{{ monitor.url }}</td>
+      <td style="padding:0.5rem;">{{ monitor.get_current_status_display }}</td>
+      <td style="padding:0.5rem;">{{ monitor.last_checked_at|default:"Never" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="margin-top:1rem; color:#666;">No monitors yet.</p>
+{% endif %}
+{% endblock %}
