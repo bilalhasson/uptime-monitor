@@ -5,15 +5,18 @@
 {% block content %}
 <h1>Delete Monitor</h1>
 
-<p style="margin-top:1rem;">Are you sure you want to delete the monitor for:</p>
-<p style="margin-top:0.5rem; font-weight:600;">{{ monitor.url }}</p>
-<p style="margin-top:0.5rem; color:#666; font-size:0.875rem;">All check history for this monitor will be permanently removed.</p>
-
-<div style="margin-top:1.5rem; display:flex; gap:0.75rem;">
-  <form method="post">
+<div class="form-card">
+  <form method="post" aria-describedby="delete-description">
     {% csrf_token %}
-    <button type="submit" class="btn" style="background:#dc2626; color:#fff;">Yes, delete</button>
+    <div id="delete-description">
+      <p>Are you sure you want to delete the monitor for:</p>
+      <p style="margin-top:0.5rem; font-weight:600;">{{ monitor.url }}</p>
+      <p style="margin-top:0.5rem; color:#666; font-size:0.875rem;">All check history for this monitor will be permanently removed.</p>
+    </div>
+    <div class="form-actions" style="margin-top:1.5rem;">
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+      <a href="/" class="btn btn-secondary">Cancel</a>
+    </div>
   </form>
-  <a href="/" class="btn" style="background:#e5e7eb; color:#1a1a1a;">Cancel</a>
 </div>
 {% endblock %}

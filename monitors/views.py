@@ -38,6 +38,20 @@ def dashboard_view(request):
 
 
 @login_required
+def monitor_edit_view(request, monitor_id):
+    monitor = get_object_or_404(Monitor, pk=monitor_id, owner=request.user)
+    if request.method == "POST":
+        form = MonitorForm(request.POST, instance=monitor)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Monitor updated.")
+            return redirect("/")
+    else:
+        form = MonitorForm(instance=monitor)
+    return render(request, "monitors/monitor_edit.html", {"form": form, "monitor": monitor})
+
+
+@login_required
 def monitor_delete_view(request, monitor_id):
     monitor = get_object_or_404(Monitor, pk=monitor_id, owner=request.user)
     if request.method == "POST":

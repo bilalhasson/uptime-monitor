@@ -14,12 +14,19 @@ class SignupForm(UserCreationForm):
 class MonitorForm(forms.ModelForm):
     class Meta:
         model = Monitor
-        fields = ("url",)
+        fields = ("url", "check_interval")
         widgets = {
             "url": forms.URLInput(
                 attrs={
                     "placeholder": "https://example.com",
-                    "style": "padding:0.5rem; width:100%; max-width:400px; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;",
+                    "class": "form-input",
+                }
+            ),
+            "check_interval": forms.NumberInput(
+                attrs={
+                    "class": "form-input",
+                    "placeholder": "300",
+                    "aria-describedby": "help_id_check_interval",
                 }
             ),
         }

@@ -4,62 +4,71 @@
 
 {% block content %}
 <h1>Sign up</h1>
-<form method="post">
-  {% csrf_token %}
 
-  {% if form.non_field_errors %}
-  <div style="background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; padding:0.75rem 1rem; border-radius:4px; margin-bottom:1rem; font-size:0.875rem;">
-    {% for error in form.non_field_errors %}
-      <p>{{ error }}</p>
-    {% endfor %}
-  </div>
-  {% endif %}
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_username" style="display:block; font-weight:500; margin-bottom:0.25rem;">Username</label>
-    <input type="text" name="username" id="id_username" maxlength="150" autofocus required
-           value="{{ form.username.value|default:'' }}"
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.username.help_text %}
-    <div style="color:#888; font-size:0.75rem; margin-top:0.25rem;">{{ form.username.help_text }}</div>
+    {% if form.non_field_errors %}
+    <ul class="form-error-banner" role="alert">
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
     {% endif %}
-    {% if form.username.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.username.errors.0 }}</div>
-    {% endif %}
-  </div>
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_email" style="display:block; font-weight:500; margin-bottom:0.25rem;">Email</label>
-    <input type="email" name="email" id="id_email"
-           value="{{ form.email.value|default:'' }}"
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.email.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.email.errors.0 }}</div>
-    {% endif %}
-  </div>
+    <fieldset>
+      <legend class="sr-only">Account details</legend>
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_password1" style="display:block; font-weight:500; margin-bottom:0.25rem;">Password</label>
-    <input type="password" name="password1" id="id_password1" required
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.password1.help_text %}
-    <div style="color:#888; font-size:0.75rem; margin-top:0.25rem;">{{ form.password1.help_text|safe }}</div>
-    {% endif %}
-    {% if form.password1.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.password1.errors.0 }}</div>
-    {% endif %}
-  </div>
+      <div class="form-group">
+        <label class="form-label" for="id_username">Username</label>
+        <input type="text" name="username" id="id_username" class="form-input" maxlength="150" autofocus required
+               autocomplete="username"
+               value="{{ form.username.value|default:'' }}"
+               {% if form.username.help_text %}aria-describedby="help_id_username"{% endif %}>
+        {% if form.username.help_text %}
+        <small class="form-help" id="help_id_username">{{ form.username.help_text }}</small>
+        {% endif %}
+        {% if form.username.errors %}
+        <div class="form-error" role="alert">{{ form.username.errors.0 }}</div>
+        {% endif %}
+      </div>
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_password2" style="display:block; font-weight:500; margin-bottom:0.25rem;">Password confirmation</label>
-    <input type="password" name="password2" id="id_password2" required
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.password2.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.password2.errors.0 }}</div>
-    {% endif %}
-  </div>
+      <div class="form-group">
+        <label class="form-label" for="id_email">Email</label>
+        <input type="email" name="email" id="id_email" class="form-input"
+               autocomplete="email"
+               value="{{ form.email.value|default:'' }}">
+        {% if form.email.errors %}
+        <div class="form-error" role="alert">{{ form.email.errors.0 }}</div>
+        {% endif %}
+      </div>
 
-  <button type="submit" class="btn btn-primary">Sign up</button>
-</form>
+      <div class="form-group">
+        <label class="form-label" for="id_password1">Password</label>
+        <input type="password" name="password1" id="id_password1" class="form-input" required
+               autocomplete="new-password"
+               {% if form.password1.help_text %}aria-describedby="help_id_password1"{% endif %}>
+        {% if form.password1.help_text %}
+        <small class="form-help" id="help_id_password1">{{ form.password1.help_text|safe }}</small>
+        {% endif %}
+        {% if form.password1.errors %}
+        <div class="form-error" role="alert">{{ form.password1.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_password2">Password confirmation</label>
+        <input type="password" name="password2" id="id_password2" class="form-input" required
+               autocomplete="new-password">
+        {% if form.password2.errors %}
+        <div class="form-error" role="alert">{{ form.password2.errors.0 }}</div>
+        {% endif %}
+      </div>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary">Sign up</button>
+  </form>
+</div>
 <p style="margin-top:1rem;">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
 {% endblock %}

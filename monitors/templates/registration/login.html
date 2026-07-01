@@ -4,36 +4,43 @@
 
 {% block content %}
 <h1>Log in</h1>
-<form method="post">
-  {% csrf_token %}
 
-  {% if form.non_field_errors %}
-  <div style="background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; padding:0.75rem 1rem; border-radius:4px; margin-bottom:1rem; font-size:0.875rem;">
-    {% for error in form.non_field_errors %}
-      <p>{{ error }}</p>
-    {% endfor %}
-  </div>
-  {% endif %}
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_username" style="display:block; font-weight:500; margin-bottom:0.25rem;">Username</label>
-    <input type="text" name="username" id="id_username" autofocus required
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.username.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.username.errors.0 }}</div>
+    {% if form.non_field_errors %}
+    <ul class="form-error-banner" role="alert">
+      {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
     {% endif %}
-  </div>
 
-  <div style="margin-bottom:1rem;">
-    <label for="id_password" style="display:block; font-weight:500; margin-bottom:0.25rem;">Password</label>
-    <input type="password" name="password" id="id_password" required
-           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
-    {% if form.password.errors %}
-    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.password.errors.0 }}</div>
-    {% endif %}
-  </div>
+    <fieldset>
+      <legend class="sr-only">Login credentials</legend>
 
-  <button type="submit" class="btn btn-primary">Log in</button>
-</form>
+      <div class="form-group">
+        <label class="form-label" for="id_username">Username</label>
+        <input type="text" name="username" id="id_username" class="form-input" autofocus required
+               autocomplete="username">
+        {% if form.username.errors %}
+        <div class="form-error" role="alert">{{ form.username.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="id_password">Password</label>
+        <input type="password" name="password" id="id_password" class="form-input" required
+               autocomplete="current-password">
+        {% if form.password.errors %}
+        <div class="form-error" role="alert">{{ form.password.errors.0 }}</div>
+        {% endif %}
+      </div>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary">Log in</button>
+  </form>
+</div>
 <p style="margin-top:1rem;">Don't have an account? <a href="{% url 'signup' %}">Sign up</a></p>
 {% endblock %}
