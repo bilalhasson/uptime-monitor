@@ -83,4 +83,46 @@
 {% else %}
 <p style="margin-top:1.5rem; color:#666;">No monitors yet. Add one above.</p>
 {% endif %}
+
+<h2 style="margin-top:2rem;">Status Pages</h2>
+{% if status_pages %}
+<table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+  <caption class="sr-only">Your public status pages</caption>
+  <thead>
+    <tr style="text-align:left; border-bottom:2px solid #e0e0e0;">
+      <th style="padding:0.5rem;">Title</th>
+      <th style="padding:0.5rem;">Slug</th>
+      <th style="padding:0.5rem;">Published</th>
+      <th style="padding:0.5rem;"><span class="sr-only">Actions</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for page in status_pages %}
+    <tr style="border-bottom:1px solid #e0e0e0;">
+      <td style="padding:0.5rem;">{{ page.title }}</td>
+      <td style="padding:0.5rem;">
+        {% if page.is_published %}
+        <a href="{% url 'statuspage-public' page.slug %}" style="color:#2563eb; text-decoration:none;">/status/{{ page.slug }}/</a>
+        {% else %}
+        /status/{{ page.slug }}/
+        {% endif %}
+      </td>
+      <td style="padding:0.5rem;">
+        {% if page.is_published %}
+        <span style="color:#16a34a;" aria-hidden="true">&#10003;</span> Yes
+        {% else %}
+        <span style="color:#9ca3af;">No</span>
+        {% endif %}
+      </td>
+      <td style="padding:0.5rem;">
+        <a href="{% url 'statuspage-edit' page.pk %}" style="color:#2563eb; font-size:0.85rem;">Edit</a>
+        <a href="{% url 'statuspage-delete' page.pk %}" style="color:#dc2626; font-size:0.85rem; margin-left:0.75rem;">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="margin-top:0.75rem; color:#666;">No status pages yet. <a href="{% url 'statuspage-create' %}" style="color:#2563eb;">Create one</a> to share your uptime publicly.</p>
+{% endif %}
 {% endblock %}

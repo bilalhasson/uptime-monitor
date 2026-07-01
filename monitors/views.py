@@ -35,7 +35,14 @@ def dashboard_view(request):
     else:
         form = MonitorForm()
     monitors = Monitor.objects.filter(owner=request.user)
-    return render(request, "monitors/dashboard.html", {"form": form, "monitors": monitors})
+    from statuspages.models import StatusPage
+
+    status_pages = StatusPage.objects.filter(owner=request.user)
+    return render(
+        request,
+        "monitors/dashboard.html",
+        {"form": form, "monitors": monitors, "status_pages": status_pages},
+    )
 
 
 @login_required

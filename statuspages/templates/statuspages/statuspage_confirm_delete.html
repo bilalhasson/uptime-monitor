@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Status Page — Uptime Monitor{% endblock %}
+
+{% block content %}
+<p style="margin-bottom:1rem;">
+  <a href="{% url 'statuspage-list' %}" style="color:#2563eb; text-decoration:none;">&larr; Back to Status Pages</a>
+</p>
+
+<h1>Delete Status Page</h1>
+
+<div class="form-card">
+  <p>Are you sure you want to delete <strong>{{ status_page.title }}</strong>?</p>
+  <p style="margin-top:0.5rem; color:#666; font-size:0.875rem;">This action cannot be undone. The public page at /status/{{ status_page.slug }}/ will no longer be accessible.</p>
+
+  <form method="post" style="margin-top:1.5rem;">
+    {% csrf_token %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-danger">Delete</button>
+      <a href="{% url 'statuspage-list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "monitors",
     "notifications",
+    "statuspages",
 ]
 
 MIDDLEWARE = [
