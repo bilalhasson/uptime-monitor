@@ -31,8 +31,8 @@ echo "Applying migrations..."
 "$PYTHON" manage.py migrate --run-syncdb
 
 echo "Ensuring dev superuser 'admin' exists..."
-DJANGO_SUPERUSER_PASSWORD=password "$PYTHON" manage.py createsuperuser \
-  --noinput --username admin  2>/dev/null \
+DJANGO_SUPERUSER_PASSWORD=password DJANGO_SUPERUSER_EMAIL="" "$PYTHON" manage.py createsuperuser \
+  --noinput --username admin 2>/dev/null \
   && echo "Created superuser 'admin' (password: password)" \
   || echo "Superuser 'admin' already exists — skipping."
 
