@@ -43,6 +43,13 @@ celery -A uptime_monitor beat --loglevel=info
 docker compose down
 ```
 
+## Usage
+
+1. **Sign up** at `/signup/` (or log in at `/login/`).
+2. **Add a monitor** — paste a URL into the input on the dashboard and click "Add".
+3. **View status** — monitors show a colored dot: green (up), red (down), or grey (pending). Status updates automatically as the background checker runs.
+4. **Delete a monitor** — click "Delete" next to any monitor, then confirm on the next page. All check history for that monitor is removed.
+
 ## Email notifications
 
 Email alerts are sent via [Resend](https://resend.com) when a monitor transitions

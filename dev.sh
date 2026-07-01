@@ -30,6 +30,12 @@ docker compose -f "$DIR/docker-compose.yml" up -d
 echo "Applying migrations..."
 "$PYTHON" manage.py migrate --run-syncdb
 
+echo "Ensuring dev superuser 'admin' exists..."
+DJANGO_SUPERUSER_PASSWORD=password "$PYTHON" manage.py createsuperuser \
+  --noinput --username admin  2>/dev/null \
+  && echo "Created superuser 'admin' (password: password)" \
+  || echo "Superuser 'admin' already exists — skipping."
+
 echo "Starting Django dev server..."
 "$PYTHON" manage.py runserver &
 PID_SERVER=$!

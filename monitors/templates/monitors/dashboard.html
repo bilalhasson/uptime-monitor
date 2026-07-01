@@ -5,26 +5,55 @@
 {% block content %}
 <h1>Dashboard</h1>
 
+{% for message in messages %}
+<div style="margin-top:1rem; padding:0.75rem 1rem; border-radius:4px; background:#dcfce7; color:#166534; border:1px solid #bbf7d0;">
+  {{ message }}
+</div>
+{% endfor %}
+
+<form method="post" action="/" style="margin-top:1rem; display:flex; gap:0.5rem; align-items:flex-start;">
+  {% csrf_token %}
+  <div>
+    {{ form.url }}
+    {% if form.url.errors %}
+    <div style="color:#dc2626; font-size:0.8rem; margin-top:0.25rem;">{{ form.url.errors.0 }}</div>
+    {% endif %}
+  </div>
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
 {% if monitors %}
-<table style="width:100%; border-collapse:collapse; margin-top:1rem;">
+<table style="width:100%; border-collapse:collapse; margin-top:1.5rem;">
   <thead>
     <tr style="text-align:left; border-bottom:2px solid #e0e0e0;">
       <th style="padding:0.5rem;">URL</th>
       <th style="padding:0.5rem;">Status</th>
       <th style="padding:0.5rem;">Last Checked</th>
+      <th style="padding:0.5rem;"></th>
     </tr>
   </thead>
   <tbody>
     {% for monitor in monitors %}
     <tr style="border-bottom:1px solid #e0e0e0;">
       <td style="padding:0.5rem;">{{ monitor.url }}</td>
-      <td style="padding:0.5rem;">{{ monitor.get_current_status_display }}</td>
+      <td style="padding:0.5rem;">
+        {% if monitor.current_status == "up" %}
+        <span style="color:#16a34a;">●</span> Up
+        {% elif monitor.current_status == "down" %}
+        <span style="color:#dc2626;">●</span> Down
+        {% else %}
+        <span style="color:#9ca3af;">●</span> Pending
+        {% endif %}
+      </td>
       <td style="padding:0.5rem;">{{ monitor.last_checked_at|default:"Never" }}</td>
+      <td style="padding:0.5rem;">
+        <a href="{% url 'monitor-delete' monitor.id %}" style="color:#dc2626; font-size:0.85rem;">Delete</a>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 {% else %}
-<p style="margin-top:1rem; color:#666;">No monitors yet.</p>
+<p style="margin-top:1.5rem; color:#666;">No monitors yet. Add one above.</p>
 {% endif %}
 {% endblock %}

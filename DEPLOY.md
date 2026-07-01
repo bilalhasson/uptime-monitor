@@ -30,7 +30,8 @@ This project deploys as **5 components** from this single GitHub repo:
 4. **beat service** — same again:
    - Custom Start Command: `celery -A uptime_monitor beat --loglevel=info`
    - Variables: `DATABASE_URL`, `REDIS_URL`
-5. **Create a superuser** (one-time) — from the web service shell:
+5. **Create a superuser** (optional) — monitors are managed through the UI by
+   any logged-in user. A superuser is only needed for Django admin access:
    ```
    python manage.py createsuperuser
    ```
