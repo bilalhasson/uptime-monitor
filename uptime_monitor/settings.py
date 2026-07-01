@@ -150,6 +150,9 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+# Retry the broker connection on startup (Celery 6 default; set explicitly to
+# silence the pending-deprecation warning).
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Cap prefork workers: Celery otherwise forks one process per CPU (Railway
 # reports many cores), and each child loads a full Django app — enough to OOM
 # the container. Checks are I/O-bound HTTP requests, so a small pool is plenty.

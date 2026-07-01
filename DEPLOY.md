@@ -26,10 +26,10 @@ This project deploys as **5 components** from this single GitHub repo:
    `CSRF_TRUSTED_ORIGINS` pick it up in `settings.py`.
 3. **worker service** — **+ New → GitHub Repo** (same repo), then:
    - Settings → Deploy → Custom Start Command: `celery -A uptime_monitor worker --loglevel=info`
-   - Variables: `DATABASE_URL`, `REDIS_URL`, `RESEND_API_KEY`, and `C_FORCE_ROOT = true`
+   - Variables: `DATABASE_URL`, `REDIS_URL`, `RESEND_API_KEY`
 4. **beat service** — same again:
    - Custom Start Command: `celery -A uptime_monitor beat --loglevel=info`
-   - Variables: `DATABASE_URL`, `REDIS_URL`, and `C_FORCE_ROOT = true`
+   - Variables: `DATABASE_URL`, `REDIS_URL`
 5. **Create a superuser** (one-time) — from the web service shell:
    ```
    python manage.py createsuperuser
@@ -38,13 +38,17 @@ This project deploys as **5 components** from this single GitHub repo:
 Tip: use Railway **project-level shared variables** for values common to all
 three services so you set them once instead of per service.
 
-## `C_FORCE_ROOT`
+## Running Celery as root
 
-Celery logs a `SecurityWarning` when it runs as root, which it does inside
-Railway's containers. The container is isolated, so this is safe here. Setting
-`C_FORCE_ROOT = true` on the **worker** and **beat** services silences the
-warning. (A non-root `--uid` would be the textbook fix but isn't practical
-under Nixpacks.)
+Celery emits a `SecurityWarning` ("running the worker with superuser
+privileges") whenever it runs as root, which it always does inside Railway's
+isolated containers. This is safe here — the container is a throwaway sandbox.
+
+Note: `C_FORCE_ROOT` does **not** silence this warning (it only bypasses a
+separate pickle-specific error that doesn't apply when using JSON
+serialization). The warning is filtered directly in `uptime_monitor/celery.py`
+via `warnings.filterwarnings(...)`, so no env var is needed. A non-root `--uid`
+would be the textbook fix but isn't practical under Nixpacks.
 
 ## Credentials
 
