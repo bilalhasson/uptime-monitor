@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings — Uptime Monitor{% endblock %}
+
+{% block content %}
+<h1>Notification Settings</h1>
+
+{% for message in messages %}
+<div class="alert-success">{{ message }}</div>
+{% endfor %}
+
+<div class="form-card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Notification Categories</h2>
+  <form method="post">
+    {% csrf_token %}
+    <fieldset>
+      <legend class="sr-only">Notification preferences</legend>
+      {% for pref in preferences %}
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" name="enabled" value="{{ pref.id }}"
+                 {% if pref.enabled %}checked{% endif %}>
+          {{ pref.label }}
+        </label>
+      </div>
+      {% empty %}
+      <p>No notification categories registered yet.</p>
+      {% endfor %}
+    </fieldset>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="form-card" style="margin-top:1.5rem;">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Notification Channels</h2>
+
+  {% if channels %}
+  <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;">
+    <thead>
+      <tr style="text-align:left;border-bottom:2px solid #e0e0e0;">
+        <th style="padding:0.5rem 0.5rem 0.5rem 0;">Type</th>
+        <th style="padding:0.5rem;">Label</th>
+        <th style="padding:0.5rem;">Status</th>
+        <th style="padding:0.5rem;text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ch in channels %}
+      <tr style="border-bottom:1px solid #e0e0e0;">
+        <td style="padding:0.5rem 0.5rem 0.5rem 0;">{{ ch.get_channel_type_display }}</td>
+        <td style="padding:0.5rem;">{{ ch.label }}</td>
+        <td style="padding:0.5rem;">
+          {% if ch.enabled %}
+            <span style="color:#166534;">Enabled</span>
+          {% else %}
+            <span style="color:#991b1b;">Disabled</span>
+          {% endif %}
+        </td>
+        <td style="padding:0.5rem;text-align:right;">
+          <form method="post" action="{% url 'toggle-channel' ch.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary" style="font-size:0.8rem;padding:0.25rem 0.5rem;">
+              {% if ch.enabled %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'delete-channel' ch.id %}" style="display:inline;margin-left:0.25rem;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" style="font-size:0.8rem;padding:0.25rem 0.5rem;">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#666;margin-bottom:1rem;">No channels configured yet. Add one below.</p>
+  {% endif %}
+
+  <div class="form-actions">
+    <a href="{% url 'add-webhook-channel' %}" class="btn btn-primary">Add Webhook</a>
+    {% if slack_client_id %}
+    <a href="{% url 'slack-oauth-initiate' %}" class="btn btn-primary">Connect Slack</a>
+    {% endif %}
+    {% if twilio_configured %}
+    <a href="{% url 'add-sms-channel' %}" class="btn btn-primary">Add SMS</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

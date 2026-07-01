@@ -589,7 +589,7 @@ class MonitorNotificationTests(TestCase):
         self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
         self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
 
-    @patch("monitors.notifications.send_email")
+    @patch("monitors.notifications.send_notification")
     def test_send_monitor_added_email(self, mock_send):
         from .notifications import send_monitor_added_email
         send_monitor_added_email(self.monitor)
@@ -600,7 +600,7 @@ class MonitorNotificationTests(TestCase):
         self.assertEqual(kwargs["category"], "monitor_added")
         self.assertIn("https://example.com", kwargs["subject"])
 
-    @patch("monitors.notifications.send_email")
+    @patch("monitors.notifications.send_notification")
     def test_send_monitor_down_email(self, mock_send):
         from .notifications import send_monitor_down_email
         send_monitor_down_email(self.monitor)
@@ -611,7 +611,7 @@ class MonitorNotificationTests(TestCase):
         self.assertEqual(kwargs["category"], "monitor_down")
         self.assertIn("DOWN", kwargs["subject"])
 
-    @patch("monitors.notifications.send_email")
+    @patch("monitors.notifications.send_notification")
     def test_send_monitor_recovery_email(self, mock_send):
         from .notifications import send_monitor_recovery_email
         send_monitor_recovery_email(self.monitor)
@@ -855,7 +855,7 @@ class SSLNotificationTests(TestCase):
         self.monitor.ssl_expiry_date = timezone.now() + timedelta(days=10)
         self.monitor.ssl_issuer = "Let's Encrypt"
 
-    @patch("monitors.notifications.send_email")
+    @patch("monitors.notifications.send_notification")
     def test_send_ssl_expiring_email_calls_send_email(self, mock_send):
         from .notifications import send_ssl_expiring_email
         send_ssl_expiring_email(self.monitor, 10)
@@ -866,7 +866,7 @@ class SSLNotificationTests(TestCase):
         self.assertEqual(kwargs["category"], "ssl_expiring")
         self.assertIn("expiring soon", kwargs["subject"])
 
-    @patch("monitors.notifications.send_email")
+    @patch("monitors.notifications.send_notification")
     def test_ssl_email_contains_days_and_url(self, mock_send):
         from .notifications import send_ssl_expiring_email
         send_ssl_expiring_email(self.monitor, 10)

@@ -1,8 +1,8 @@
-from notifications.email import send_email
+from notifications.dispatch import send_notification
 
 
 def send_monitor_added_email(monitor):
-    send_email(
+    send_notification(
         user=monitor.owner,
         subject=f"Monitor added: {monitor.url}",
         body=(
@@ -16,7 +16,7 @@ def send_monitor_added_email(monitor):
 
 
 def send_monitor_down_email(monitor):
-    send_email(
+    send_notification(
         user=monitor.owner,
         subject=f"ALERT: {monitor.url} is DOWN",
         body=(
@@ -30,7 +30,7 @@ def send_monitor_down_email(monitor):
 
 
 def send_monitor_recovery_email(monitor):
-    send_email(
+    send_notification(
         user=monitor.owner,
         subject=f"RECOVERED: {monitor.url} is back UP",
         body=(
@@ -43,7 +43,7 @@ def send_monitor_recovery_email(monitor):
 
 
 def send_ssl_expiring_email(monitor, days_remaining):
-    send_email(
+    send_notification(
         user=monitor.owner,
         subject=f"SSL certificate expiring soon: {monitor.url}",
         body=(

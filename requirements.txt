@@ -7,3 +7,4 @@ celery==5.4.0
 redis==5.2.1
 requests==2.32.3
 resend==2.5.1
+twilio==9.4.3

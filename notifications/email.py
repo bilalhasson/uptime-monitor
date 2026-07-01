@@ -3,21 +3,11 @@ import logging
 import resend
 from django.conf import settings
 
-from .models import NotificationPreference
-
 logger = logging.getLogger(__name__)
 
 
-def send_email(user, subject, body, category=None, category_label=None):
-    if category:
-        pref, _ = NotificationPreference.objects.get_or_create(
-            user=user,
-            category=category,
-            defaults={"label": category_label or category, "enabled": True},
-        )
-        if not pref.enabled:
-            return
-
+def send_email_backend(user, subject, body):
+    """Deliver an email via Resend. No preference checking."""
     if not settings.RESEND_API_KEY:
         logger.warning("RESEND_API_KEY not set — skipping email")
         return
@@ -37,6 +27,19 @@ def send_email(user, subject, body, category=None, category_label=None):
                 "text": body,
             }
         )
-        logger.info("Sent '%s' email to %s", category or "uncategorized", recipient)
+        logger.info("Sent email to %s", recipient)
     except Exception:
         logger.exception("Failed to send email to %s", recipient)
+
+
+def send_email(user, subject, body, category=None, category_label=None):
+    """Backward-compatible wrapper — delegates to dispatch."""
+    from .dispatch import send_notification
+
+    send_notification(
+        user=user,
+        subject=subject,
+        body=body,
+        category=category,
+        category_label=category_label,
+    )

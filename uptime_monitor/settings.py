@@ -187,3 +187,12 @@ NOTIFICATION_CATEGORIES = [
     ("monitor_recovered", "Monitor recovers"),
     ("ssl_expiring", "SSL certificate expiring"),
 ]
+
+# Slack OAuth
+SLACK_CLIENT_ID = os.environ.get("SLACK_CLIENT_ID", "")
+SLACK_CLIENT_SECRET = os.environ.get("SLACK_CLIENT_SECRET", "")
+
+# Twilio SMS
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
