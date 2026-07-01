@@ -1,7 +1,9 @@
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
+from django.utils import timezone
 
 from .forms import MonitorForm, SignupForm
 from .models import CheckLog, Monitor
@@ -619,3 +621,293 @@ class MonitorNotificationTests(TestCase):
         self.assertEqual(kwargs["user"], self.user)
         self.assertEqual(kwargs["category"], "monitor_recovered")
         self.assertIn("UP", kwargs["subject"])
+
+
+# ---------------------------------------------------------------------------
+# SSL field tests
+# ---------------------------------------------------------------------------
+
+
+class SSLFieldTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
+
+    def test_default_ssl_fields_null_or_blank(self):
+        self.assertIsNone(self.monitor.ssl_expiry_date)
+        self.assertEqual(self.monitor.ssl_issuer, "")
+        self.assertIsNone(self.monitor.ssl_last_checked_at)
+        self.assertEqual(self.monitor.ssl_error, "")
+
+    def test_ssl_expiry_notified_default_false(self):
+        self.assertFalse(self.monitor.ssl_expiry_notified)
+
+    def test_ssl_fields_stored_after_update(self):
+        now = timezone.now()
+        expiry = now + timedelta(days=30)
+        self.monitor.ssl_expiry_date = expiry
+        self.monitor.ssl_issuer = "Let's Encrypt"
+        self.monitor.ssl_last_checked_at = now
+        self.monitor.save()
+        self.monitor.refresh_from_db()
+        self.assertEqual(self.monitor.ssl_issuer, "Let's Encrypt")
+        self.assertIsNotNone(self.monitor.ssl_expiry_date)
+        self.assertIsNotNone(self.monitor.ssl_last_checked_at)
+
+
+# ---------------------------------------------------------------------------
+# SSL task tests
+# ---------------------------------------------------------------------------
+
+
+class SSLTaskTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.monitor = Monitor.objects.create(
+            owner=self.user, url="https://example.com",
+        )
+
+    def _make_cert(self, days_from_now=30, org="Test CA"):
+        expiry = timezone.now() + timedelta(days=days_from_now)
+        not_after = expiry.strftime("%b %d %H:%M:%S %Y GMT")
+        return {
+            "notAfter": not_after,
+            "issuer": ((("organizationName", org),),),
+        }
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_skips_non_https_monitor(self, mock_conn, mock_ctx, mock_email):
+        self.monitor.url = "http://example.com"
+        self.monitor.save()
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+        mock_conn.assert_not_called()
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_skips_paused_monitor(self, mock_conn, mock_ctx, mock_email):
+        self.monitor.is_paused = True
+        self.monitor.save()
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+        mock_conn.assert_not_called()
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_successful_check_stores_fields(self, mock_conn, mock_ctx, mock_email):
+        cert = self._make_cert(days_from_now=60, org="Let's Encrypt")
+        mock_ssock = MagicMock()
+        mock_ssock.getpeercert.return_value = cert
+        mock_ssock.__enter__ = MagicMock(return_value=mock_ssock)
+        mock_ssock.__exit__ = MagicMock(return_value=False)
+
+        mock_sock = MagicMock()
+        mock_sock.__enter__ = MagicMock(return_value=mock_sock)
+        mock_sock.__exit__ = MagicMock(return_value=False)
+        mock_conn.return_value = mock_sock
+
+        mock_ctx_instance = MagicMock()
+        mock_ctx_instance.wrap_socket.return_value = mock_ssock
+        mock_ctx.return_value = mock_ctx_instance
+
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+
+        self.monitor.refresh_from_db()
+        self.assertIsNotNone(self.monitor.ssl_expiry_date)
+        self.assertEqual(self.monitor.ssl_issuer, "Let's Encrypt")
+        self.assertIsNotNone(self.monitor.ssl_last_checked_at)
+        self.assertEqual(self.monitor.ssl_error, "")
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_connection_error_stores_ssl_error(self, mock_conn, mock_ctx, mock_email):
+        import socket
+        mock_conn.side_effect = socket.error("Connection refused")
+
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+
+        self.monitor.refresh_from_db()
+        self.assertIn("Connection refused", self.monitor.ssl_error)
+        self.assertIsNone(self.monitor.ssl_expiry_date)
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_sends_notification_when_expiring_soon(self, mock_conn, mock_ctx, mock_email):
+        cert = self._make_cert(days_from_now=10)
+        mock_ssock = MagicMock()
+        mock_ssock.getpeercert.return_value = cert
+        mock_ssock.__enter__ = MagicMock(return_value=mock_ssock)
+        mock_ssock.__exit__ = MagicMock(return_value=False)
+
+        mock_sock = MagicMock()
+        mock_sock.__enter__ = MagicMock(return_value=mock_sock)
+        mock_sock.__exit__ = MagicMock(return_value=False)
+        mock_conn.return_value = mock_sock
+
+        mock_ctx_instance = MagicMock()
+        mock_ctx_instance.wrap_socket.return_value = mock_ssock
+        mock_ctx.return_value = mock_ctx_instance
+
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+
+        mock_email.assert_called_once()
+        self.monitor.refresh_from_db()
+        self.assertTrue(self.monitor.ssl_expiry_notified)
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_does_not_renotify_when_already_notified(self, mock_conn, mock_ctx, mock_email):
+        self.monitor.ssl_expiry_notified = True
+        self.monitor.save()
+
+        cert = self._make_cert(days_from_now=10)
+        mock_ssock = MagicMock()
+        mock_ssock.getpeercert.return_value = cert
+        mock_ssock.__enter__ = MagicMock(return_value=mock_ssock)
+        mock_ssock.__exit__ = MagicMock(return_value=False)
+
+        mock_sock = MagicMock()
+        mock_sock.__enter__ = MagicMock(return_value=mock_sock)
+        mock_sock.__exit__ = MagicMock(return_value=False)
+        mock_conn.return_value = mock_sock
+
+        mock_ctx_instance = MagicMock()
+        mock_ctx_instance.wrap_socket.return_value = mock_ssock
+        mock_ctx.return_value = mock_ctx_instance
+
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+
+        mock_email.assert_not_called()
+
+    @patch("monitors.tasks.send_ssl_expiring_email")
+    @patch("monitors.tasks.ssl.create_default_context")
+    @patch("monitors.tasks.socket.create_connection")
+    def test_resets_flag_when_cert_renewed(self, mock_conn, mock_ctx, mock_email):
+        old_expiry = timezone.now() + timedelta(days=5)
+        self.monitor.ssl_expiry_date = old_expiry
+        self.monitor.ssl_expiry_notified = True
+        self.monitor.save()
+
+        # New cert with a different (later) expiry
+        cert = self._make_cert(days_from_now=90)
+        mock_ssock = MagicMock()
+        mock_ssock.getpeercert.return_value = cert
+        mock_ssock.__enter__ = MagicMock(return_value=mock_ssock)
+        mock_ssock.__exit__ = MagicMock(return_value=False)
+
+        mock_sock = MagicMock()
+        mock_sock.__enter__ = MagicMock(return_value=mock_sock)
+        mock_sock.__exit__ = MagicMock(return_value=False)
+        mock_conn.return_value = mock_sock
+
+        mock_ctx_instance = MagicMock()
+        mock_ctx_instance.wrap_socket.return_value = mock_ssock
+        mock_ctx.return_value = mock_ctx_instance
+
+        from .tasks import check_ssl_certificate
+        check_ssl_certificate(self.monitor.pk)
+
+        self.monitor.refresh_from_db()
+        self.assertFalse(self.monitor.ssl_expiry_notified)
+
+
+class CheckAllSSLCertificatesTaskTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+
+    @patch("monitors.tasks.check_ssl_certificate.delay")
+    def test_queues_only_https_unpaused(self, mock_delay):
+        m1 = Monitor.objects.create(owner=self.user, url="https://a.com", is_paused=False)
+        m2 = Monitor.objects.create(owner=self.user, url="http://b.com", is_paused=False)
+        m3 = Monitor.objects.create(owner=self.user, url="https://c.com", is_paused=True)
+        m4 = Monitor.objects.create(owner=self.user, url="https://d.com", is_paused=False)
+
+        from .tasks import check_all_ssl_certificates
+        check_all_ssl_certificates()
+
+        called_ids = {call.args[0] for call in mock_delay.call_args_list}
+        self.assertIn(m1.pk, called_ids)
+        self.assertNotIn(m2.pk, called_ids)
+        self.assertNotIn(m3.pk, called_ids)
+        self.assertIn(m4.pk, called_ids)
+
+
+# ---------------------------------------------------------------------------
+# SSL notification tests
+# ---------------------------------------------------------------------------
+
+
+class SSLNotificationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
+        self.monitor.ssl_expiry_date = timezone.now() + timedelta(days=10)
+        self.monitor.ssl_issuer = "Let's Encrypt"
+
+    @patch("monitors.notifications.send_email")
+    def test_send_ssl_expiring_email_calls_send_email(self, mock_send):
+        from .notifications import send_ssl_expiring_email
+        send_ssl_expiring_email(self.monitor, 10)
+
+        mock_send.assert_called_once()
+        kwargs = mock_send.call_args.kwargs
+        self.assertEqual(kwargs["user"], self.user)
+        self.assertEqual(kwargs["category"], "ssl_expiring")
+        self.assertIn("expiring soon", kwargs["subject"])
+
+    @patch("monitors.notifications.send_email")
+    def test_ssl_email_contains_days_and_url(self, mock_send):
+        from .notifications import send_ssl_expiring_email
+        send_ssl_expiring_email(self.monitor, 10)
+
+        kwargs = mock_send.call_args.kwargs
+        self.assertIn("10 days", kwargs["body"])
+        self.assertIn("https://example.com", kwargs["body"])
+
+
+# ---------------------------------------------------------------------------
+# SSL detail view tests
+# ---------------------------------------------------------------------------
+
+
+class SSLDetailViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.client.login(username="alice", password="pass1234")
+        self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
+
+    def test_detail_shows_ssl_info_for_https(self):
+        self.monitor.ssl_expiry_date = timezone.now() + timedelta(days=30)
+        self.monitor.ssl_issuer = "Test CA"
+        self.monitor.ssl_last_checked_at = timezone.now()
+        self.monitor.save()
+        response = self.client.get(f"/monitors/{self.monitor.pk}/")
+        self.assertEqual(response.context["ssl_status"], "ok")
+        self.assertIn(response.context["monitor"].ssl_days_remaining, [29, 30])
+        self.assertContains(response, "SSL Certificate")
+
+    def test_detail_hides_ssl_for_http(self):
+        http_monitor = Monitor.objects.create(owner=self.user, url="http://example.com")
+        response = self.client.get(f"/monitors/{http_monitor.pk}/")
+        self.assertIsNone(response.context["ssl_status"])
+        self.assertNotContains(response, "SSL Certificate")
+
+    def test_detail_shows_warning_when_expiring_soon(self):
+        self.monitor.ssl_expiry_date = timezone.now() + timedelta(days=7)
+        self.monitor.ssl_issuer = "Test CA"
+        self.monitor.ssl_last_checked_at = timezone.now()
+        self.monitor.save()
+        response = self.client.get(f"/monitors/{self.monitor.pk}/")
+        self.assertEqual(response.context["ssl_status"], "warning")
+        self.assertContains(response, "Expiring Soon")

@@ -60,12 +60,26 @@ def monitor_detail_view(request, monitor_id):
         uptime_pct = None
         avg_response_time = None
 
+    # SSL certificate info
+    ssl_status = None
+    if monitor.url.lower().startswith("https://"):
+        if monitor.ssl_days_remaining is not None:
+            if monitor.ssl_days_remaining < 0:
+                ssl_status = "expired"
+            elif monitor.ssl_days_remaining < 14:
+                ssl_status = "warning"
+            else:
+                ssl_status = "ok"
+        elif monitor.ssl_error:
+            ssl_status = "error"
+
     return render(request, "monitors/monitor_detail.html", {
         "monitor": monitor,
         "check_logs": check_logs_list,
         "total_checks": total_checks,
         "uptime_pct": uptime_pct,
         "avg_response_time": avg_response_time,
+        "ssl_status": ssl_status,
     })
 
 

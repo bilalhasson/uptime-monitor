@@ -172,6 +172,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "monitors.tasks.check_all_monitors",
         "schedule": 60.0,
     },
+    "check-ssl-certificates-daily": {
+        "task": "monitors.tasks.check_all_ssl_certificates",
+        "schedule": 86400.0,
+    },
 }
 
 # Resend (transactional email via HTTP API)
@@ -181,4 +185,5 @@ NOTIFICATION_CATEGORIES = [
     ("monitor_added", "Monitor added"),
     ("monitor_down", "Monitor goes down"),
     ("monitor_recovered", "Monitor recovers"),
+    ("ssl_expiring", "SSL certificate expiring"),
 ]

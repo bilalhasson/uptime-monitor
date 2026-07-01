@@ -40,3 +40,18 @@ def send_monitor_recovery_email(monitor):
         category="monitor_recovered",
         category_label="Monitor recovers",
     )
+
+
+def send_ssl_expiring_email(monitor, days_remaining):
+    send_email(
+        user=monitor.owner,
+        subject=f"SSL certificate expiring soon: {monitor.url}",
+        body=(
+            f"The SSL certificate for {monitor.url} expires in {days_remaining} days.\n\n"
+            f"Expiry date: {monitor.ssl_expiry_date}\n"
+            f"Issuer: {monitor.ssl_issuer}\n\n"
+            "Please renew the certificate to avoid service disruption."
+        ),
+        category="ssl_expiring",
+        category_label="SSL certificate expiring",
+    )

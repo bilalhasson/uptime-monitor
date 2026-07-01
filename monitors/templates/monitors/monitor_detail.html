@@ -40,6 +40,47 @@
   </div>
 </div>
 
+{% if ssl_status %}
+<div class="form-card" style="margin-top:1rem;">
+  <h2 style="font-size:1rem; margin-bottom:0.75rem;">SSL Certificate</h2>
+  {% if ssl_status == "error" %}
+  <p style="color:#dc2626;">
+    <span aria-hidden="true">&#9888;</span> SSL Error: {{ monitor.ssl_error }}
+  </p>
+  {% else %}
+  <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.75rem;">
+    <div>
+      <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Expiry Date</div>
+      <div style="margin-top:0.25rem;">{{ monitor.ssl_expiry_date|date:"N j, Y" }}</div>
+    </div>
+    <div>
+      <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Issuer</div>
+      <div style="margin-top:0.25rem;">{{ monitor.ssl_issuer|default:"Unknown" }}</div>
+    </div>
+    <div>
+      <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Days Remaining</div>
+      <div style="margin-top:0.25rem;">{{ monitor.ssl_days_remaining }}</div>
+    </div>
+    <div>
+      <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Status</div>
+      <div style="margin-top:0.25rem;">
+        {% if ssl_status == "ok" %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#dcfce7; color:#166534;">Valid</span>
+        {% elif ssl_status == "warning" %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fef3c7; color:#92400e;">Expiring Soon</span>
+        {% elif ssl_status == "expired" %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fef2f2; color:#dc2626;">Expired</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% if monitor.ssl_last_checked_at %}
+  <p style="margin-top:0.75rem; font-size:0.8rem; color:#999;">Last checked: {{ monitor.ssl_last_checked_at }}</p>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if total_checks > 0 %}
 <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; margin-top:1rem;">
   <div class="form-card" style="text-align:center;">

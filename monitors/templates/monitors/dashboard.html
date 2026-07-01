@@ -52,6 +52,11 @@
     <tr style="border-bottom:1px solid #e0e0e0;">
       <td style="padding:0.5rem;">
         <a href="{% url 'monitor-detail' monitor.id %}" style="color:#2563eb; text-decoration:none;">{{ monitor.url }}</a>
+        {% if monitor.ssl_error %}
+        <span style="color:#dc2626; font-size:0.75rem;" title="SSL error: {{ monitor.ssl_error }}">&#9888; SSL</span>
+        {% elif monitor.ssl_days_remaining is not None and monitor.ssl_days_remaining < 14 %}
+        <span style="color:#d97706; font-size:0.75rem;" title="SSL certificate expires in {{ monitor.ssl_days_remaining }} days">&#9888; SSL</span>
+        {% endif %}
       </td>
       <td style="padding:0.5rem;">
         {% if monitor.is_paused %}
