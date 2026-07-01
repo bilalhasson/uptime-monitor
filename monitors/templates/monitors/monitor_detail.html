@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ monitor.url }} — Uptime Monitor{% endblock %}
+
+{% block content %}
+<p style="margin-bottom:1rem;">
+  <a href="{% url 'dashboard' %}" style="color:#2563eb; text-decoration:none;">&larr; Back to Dashboard</a>
+</p>
+
+<div class="form-card">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size:1.25rem; word-break:break-all;">{{ monitor.url }}</h1>
+      <div style="margin-top:0.5rem;">
+        {% if monitor.current_status == "up" %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#dcfce7; color:#166534;">Up</span>
+        {% elif monitor.current_status == "down" %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fef2f2; color:#dc2626;">Down</span>
+        {% else %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#f3f4f6; color:#6b7280;">Pending</span>
+        {% endif %}
+      </div>
+      <p style="margin-top:0.5rem; font-size:0.85rem; color:#666;">
+        Check interval: {{ monitor.check_interval }}s &middot; Created: {{ monitor.created_at|date:"N j, Y" }}
+      </p>
+    </div>
+    <div class="form-actions">
+      <a href="{% url 'monitor-edit' monitor.id %}" class="btn btn-secondary">Edit</a>
+      <a href="{% url 'monitor-delete' monitor.id %}" class="btn btn-danger">Delete</a>
+    </div>
+  </div>
+</div>
+
+{% if total_checks > 0 %}
+<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1rem; margin-top:1rem;">
+  <div class="form-card" style="text-align:center;">
+    <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Uptime</div>
+    <div style="font-size:1.5rem; font-weight:700; margin-top:0.25rem;">{{ uptime_pct }}%</div>
+  </div>
+  <div class="form-card" style="text-align:center;">
+    <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Avg Response</div>
+    <div style="font-size:1.5rem; font-weight:700; margin-top:0.25rem;">{% if avg_response_time is not None %}{{ avg_response_time }} ms{% else %}&mdash;{% endif %}</div>
+  </div>
+  <div class="form-card" style="text-align:center;">
+    <div style="font-size:0.75rem; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Total Checks</div>
+    <div style="font-size:1.5rem; font-weight:700; margin-top:0.25rem;">{{ total_checks }}</div>
+  </div>
+</div>
+
+<table style="width:100%; border-collapse:collapse; margin-top:1.5rem;">
+  <caption class="sr-only">Check history for {{ monitor.url }}</caption>
+  <thead>
+    <tr style="text-align:left; border-bottom:2px solid #e0e0e0;">
+      <th style="padding:0.5rem;">Time</th>
+      <th style="padding:0.5rem;">Status Code</th>
+      <th style="padding:0.5rem;">Response Time</th>
+      <th style="padding:0.5rem;">Result</th>
+      <th style="padding:0.5rem;">Error</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in check_logs %}
+    <tr style="border-bottom:1px solid #e0e0e0;">
+      <td style="padding:0.5rem;">{{ log.checked_at }}</td>
+      <td style="padding:0.5rem;">{{ log.status_code|default:"—" }}</td>
+      <td style="padding:0.5rem;">{% if log.response_time_ms is not None %}{{ log.response_time_ms }} ms{% else %}&mdash;{% endif %}</td>
+      <td style="padding:0.5rem;">
+        {% if log.success %}
+        <span style="color:#16a34a;" aria-hidden="true">●</span> OK
+        {% else %}
+        <span style="color:#dc2626;" aria-hidden="true">●</span> Fail
+        {% endif %}
+      </td>
+      <td style="padding:0.5rem; font-size:0.85rem; color:#666;">{{ log.error_message }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="form-card" style="margin-top:1rem; text-align:center; padding:2rem; color:#666;">
+  No check data yet.
+</div>
+{% endif %}
+{% endblock %}

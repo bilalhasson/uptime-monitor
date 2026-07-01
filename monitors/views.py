@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MonitorForm, SignupForm
-from .models import Monitor
+from .models import CheckLog, Monitor
 from .notifications import send_monitor_added_email
 
 
@@ -35,6 +35,30 @@ def dashboard_view(request):
         form = MonitorForm()
     monitors = Monitor.objects.filter(owner=request.user)
     return render(request, "monitors/dashboard.html", {"form": form, "monitors": monitors})
+
+
+@login_required
+def monitor_detail_view(request, monitor_id):
+    monitor = get_object_or_404(Monitor, pk=monitor_id, owner=request.user)
+    check_logs_list = list(monitor.check_logs.all()[:50])
+    total_checks = len(check_logs_list)
+
+    if total_checks > 0:
+        successful = sum(1 for log in check_logs_list if log.success)
+        uptime_pct = round(successful / total_checks * 100, 1)
+        response_times = [log.response_time_ms for log in check_logs_list if log.response_time_ms is not None]
+        avg_response_time = round(sum(response_times) / len(response_times)) if response_times else None
+    else:
+        uptime_pct = None
+        avg_response_time = None
+
+    return render(request, "monitors/monitor_detail.html", {
+        "monitor": monitor,
+        "check_logs": check_logs_list,
+        "total_checks": total_checks,
+        "uptime_pct": uptime_pct,
+        "avg_response_time": avg_response_time,
+    })
 
 
 @login_required

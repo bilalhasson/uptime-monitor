@@ -13,6 +13,7 @@
 
 <div class="form-card">
   <form method="post" action="/" style="margin-top:0;">
+    {% csrf_token %}
     <fieldset>
       <legend><h2 style="margin-bottom:0.5rem;">Add Monitor</h2></legend>
       <div class="form-group">
@@ -49,7 +50,9 @@
   <tbody>
     {% for monitor in monitors %}
     <tr style="border-bottom:1px solid #e0e0e0;">
-      <td style="padding:0.5rem;">{{ monitor.url }}</td>
+      <td style="padding:0.5rem;">
+        <a href="{% url 'monitor-detail' monitor.id %}" style="color:#2563eb; text-decoration:none;">{{ monitor.url }}</a>
+      </td>
       <td style="padding:0.5rem;">
         {% if monitor.current_status == "up" %}
         <span style="color:#16a34a;" aria-hidden="true">●</span> Up
