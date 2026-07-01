@@ -15,6 +15,9 @@ def check_monitor(monitor_id):
     except Monitor.DoesNotExist:
         return
 
+    if monitor.is_paused:
+        return
+
     previous_status = monitor.current_status
 
     status_code = None
@@ -72,6 +75,6 @@ def check_monitor(monitor_id):
 
 @shared_task
 def check_all_monitors():
-    monitor_ids = Monitor.objects.values_list("id", flat=True)
+    monitor_ids = Monitor.objects.filter(is_paused=False).values_list("id", flat=True)
     for monitor_id in monitor_ids:
         check_monitor.delay(monitor_id)

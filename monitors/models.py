@@ -21,6 +21,7 @@ class Monitor(models.Model):
         max_length=10, choices=Status.choices, default=Status.PENDING
     )
     last_checked_at = models.DateTimeField(null=True, blank=True)
+    is_paused = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from .forms import MonitorForm, SignupForm
 from .models import CheckLog, Monitor
@@ -59,6 +60,18 @@ def monitor_detail_view(request, monitor_id):
         "uptime_pct": uptime_pct,
         "avg_response_time": avg_response_time,
     })
+
+
+@login_required
+@require_POST
+def monitor_toggle_pause_view(request, monitor_id):
+    monitor = get_object_or_404(Monitor, pk=monitor_id, owner=request.user)
+    monitor.is_paused = not monitor.is_paused
+    monitor.save(update_fields=["is_paused"])
+    action = "paused" if monitor.is_paused else "resumed"
+    messages.success(request, f"Monitor {action}.")
+    next_url = request.POST.get("next", "/")
+    return redirect(next_url)
 
 
 @login_required

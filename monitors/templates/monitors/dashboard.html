@@ -54,7 +54,9 @@
         <a href="{% url 'monitor-detail' monitor.id %}" style="color:#2563eb; text-decoration:none;">{{ monitor.url }}</a>
       </td>
       <td style="padding:0.5rem;">
-        {% if monitor.current_status == "up" %}
+        {% if monitor.is_paused %}
+        <span style="color:#d97706;" aria-hidden="true">●</span> Paused
+        {% elif monitor.current_status == "up" %}
         <span style="color:#16a34a;" aria-hidden="true">●</span> Up
         {% elif monitor.current_status == "down" %}
         <span style="color:#dc2626;" aria-hidden="true">●</span> Down
@@ -64,7 +66,14 @@
       </td>
       <td style="padding:0.5rem;">{{ monitor.last_checked_at|default:"Never" }}</td>
       <td style="padding:0.5rem;">
-        <a href="{% url 'monitor-edit' monitor.id %}" style="color:#2563eb; font-size:0.85rem;">Edit</a>
+        <form method="post" action="{% url 'monitor-toggle-pause' monitor.id %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="/">
+          <button type="submit" style="background:none; border:none; color:#d97706; font-size:0.85rem; cursor:pointer; padding:0; font:inherit;">
+            {% if monitor.is_paused %}Resume{% else %}Pause{% endif %}
+          </button>
+        </form>
+        <a href="{% url 'monitor-edit' monitor.id %}" style="color:#2563eb; font-size:0.85rem; margin-left:0.75rem;">Edit</a>
         <a href="{% url 'monitor-delete' monitor.id %}" style="color:#dc2626; font-size:0.85rem; margin-left:0.75rem;">Delete</a>
       </td>
     </tr>

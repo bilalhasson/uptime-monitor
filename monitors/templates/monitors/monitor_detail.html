@@ -12,7 +12,9 @@
     <div>
       <h1 style="font-size:1.25rem; word-break:break-all;">{{ monitor.url }}</h1>
       <div style="margin-top:0.5rem;">
-        {% if monitor.current_status == "up" %}
+        {% if monitor.is_paused %}
+        <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fef3c7; color:#92400e;">Paused</span>
+        {% elif monitor.current_status == "up" %}
         <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#dcfce7; color:#166534;">Up</span>
         {% elif monitor.current_status == "down" %}
         <span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:600; background:#fef2f2; color:#dc2626;">Down</span>
@@ -25,6 +27,13 @@
       </p>
     </div>
     <div class="form-actions">
+      <form method="post" action="{% url 'monitor-toggle-pause' monitor.id %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'monitor-detail' monitor.id %}">
+        <button type="submit" class="btn btn-secondary">
+          {% if monitor.is_paused %}Resume{% else %}Pause{% endif %}
+        </button>
+      </form>
       <a href="{% url 'monitor-edit' monitor.id %}" class="btn btn-secondary">Edit</a>
       <a href="{% url 'monitor-delete' monitor.id %}" class="btn btn-danger">Delete</a>
     </div>
