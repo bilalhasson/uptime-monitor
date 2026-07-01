@@ -6,7 +6,59 @@
 <h1>Sign up</h1>
 <form method="post">
   {% csrf_token %}
-  {{ form.as_p }}
+
+  {% if form.non_field_errors %}
+  <div style="background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; padding:0.75rem 1rem; border-radius:4px; margin-bottom:1rem; font-size:0.875rem;">
+    {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style="margin-bottom:1rem;">
+    <label for="id_username" style="display:block; font-weight:500; margin-bottom:0.25rem;">Username</label>
+    <input type="text" name="username" id="id_username" maxlength="150" autofocus required
+           value="{{ form.username.value|default:'' }}"
+           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+    {% if form.username.help_text %}
+    <div style="color:#888; font-size:0.75rem; margin-top:0.25rem;">{{ form.username.help_text }}</div>
+    {% endif %}
+    {% if form.username.errors %}
+    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.username.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <label for="id_email" style="display:block; font-weight:500; margin-bottom:0.25rem;">Email</label>
+    <input type="email" name="email" id="id_email"
+           value="{{ form.email.value|default:'' }}"
+           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+    {% if form.email.errors %}
+    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.email.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <label for="id_password1" style="display:block; font-weight:500; margin-bottom:0.25rem;">Password</label>
+    <input type="password" name="password1" id="id_password1" required
+           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+    {% if form.password1.help_text %}
+    <div style="color:#888; font-size:0.75rem; margin-top:0.25rem;">{{ form.password1.help_text|safe }}</div>
+    {% endif %}
+    {% if form.password1.errors %}
+    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.password1.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div style="margin-bottom:1rem;">
+    <label for="id_password2" style="display:block; font-weight:500; margin-bottom:0.25rem;">Password confirmation</label>
+    <input type="password" name="password2" id="id_password2" required
+           style="padding:0.5rem; width:100%; border:1px solid #ccc; border-radius:4px; font-size:0.875rem;">
+    {% if form.password2.errors %}
+    <div style="color:#991b1b; font-size:0.8rem; margin-top:0.25rem;">{{ form.password2.errors.0 }}</div>
+    {% endif %}
+  </div>
+
   <button type="submit" class="btn btn-primary">Sign up</button>
 </form>
 <p style="margin-top:1rem;">Already have an account? <a href="{% url 'login' %}">Log in</a></p>

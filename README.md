@@ -2,6 +2,8 @@
 
 A Django application that monitors website uptime by periodically checking URLs and recording results. Sends email notifications via [Resend](https://resend.com) when a monitor goes down or recovers.
 
+**Live at [uptime.bilalhasson.com](https://uptime.bilalhasson.com)**
+
 ## Prerequisites
 
 - Python 3.12+
@@ -65,6 +67,10 @@ DEFAULT_FROM_EMAIL = "UptimeMonitor <noreply@yourdomain.com>"
 When `RESEND_API_KEY` is empty (the default), notifications are skipped and a
 warning is logged. Monitor owners must have an email address on their user
 account to receive alerts.
+
+## Deployment
+
+Deployed on Railway. See [DEPLOY.md](DEPLOY.md) for setup instructions.
 
 ## Credentials
 

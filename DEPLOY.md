@@ -67,3 +67,13 @@ Production secrets are stored in **Bitwarden** under a `deploy/<project>` item
 - `DATABASE_URL` / `REDIS_URL` are managed by Railway's plugins via `${{...}}`
   references; don't copy them into the vault (they rotate on Railway's side).
 - Local dev uses a gitignored `.env` with throwaway values.
+
+## Custom domain
+
+The app is served at `uptime.bilalhasson.com` via a CNAME record:
+
+1. In Railway, open the **web** service → **Settings → Networking → Custom Domain** and add `uptime.bilalhasson.com`.
+2. At your DNS provider, create a **CNAME** record pointing `uptime` to the Railway-provided target (e.g. `*.up.railway.app`).
+3. Railway will automatically provision a TLS certificate once the CNAME propagates.
+
+`ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` in `settings.py` already include this domain.
