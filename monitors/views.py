@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import MonitorForm, SignupForm
 from .models import Monitor
+from .notifications import send_monitor_added_email
 
 
 def signup_view(request):
@@ -27,6 +28,7 @@ def dashboard_view(request):
             monitor = form.save(commit=False)
             monitor.owner = request.user
             monitor.save()
+            send_monitor_added_email(monitor)
             messages.success(request, "Monitor added.")
             return redirect("/")
     else:

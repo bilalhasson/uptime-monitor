@@ -6,6 +6,16 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
+def send_monitor_added_email(monitor):
+    subject = f"Monitor added: {monitor.url}"
+    body = (
+        f"You're now monitoring {monitor.url}.\n\n"
+        f"We'll check it every {monitor.check_interval} seconds and notify you "
+        f"if it goes down."
+    )
+    _send_status_email(monitor, subject, body)
+
+
 def send_monitor_down_email(monitor):
     subject = f"ALERT: {monitor.url} is DOWN"
     body = (
