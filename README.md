@@ -50,12 +50,16 @@ docker compose down
 1. **Sign up** at `/signup/` (or log in at `/login/`).
 2. **Add a monitor** — paste a URL into the input on the dashboard and click "Add".
 3. **View status** — monitors show a colored dot: green (up), red (down), or grey (pending). Status updates automatically as the background checker runs.
-4. **Delete a monitor** — click "Delete" next to any monitor, then confirm on the next page. All check history for that monitor is removed.
+4. **Pause/resume** — toggle monitoring on or off without deleting the monitor.
+5. **Monitor detail** — click a monitor to see check history, uptime percentage, and average response time.
+6. **Edit/delete** — update a monitor's settings or remove it entirely (all check history is deleted with it).
+7. **Email preferences** — visit `/settings/emails/` to control which notification types you receive.
 
 ## Email notifications
 
 Email alerts are sent via [Resend](https://resend.com) when a monitor transitions
 between **up** and **down** states. The first check (pending to up/down) is silent.
+A confirmation email is also sent when a new monitor is added.
 
 Set these environment variables to enable notifications:
 
@@ -67,6 +71,19 @@ DEFAULT_FROM_EMAIL = "UptimeMonitor <noreply@yourdomain.com>"
 When `RESEND_API_KEY` is empty (the default), notifications are skipped and a
 warning is logged. Monitor owners must have an email address on their user
 account to receive alerts.
+
+### Per-user preferences
+
+Users can opt out of individual notification categories at `/settings/emails/`.
+Three categories are available:
+
+- **Monitor added** — confirmation when a new monitor is created
+- **Monitor goes down** — alert when a monitored URL starts failing
+- **Monitor recovers** — alert when a monitored URL comes back up
+
+Preferences are created automatically on first use. The `notifications` app is
+fully decoupled from `monitors` — it provides generic category-based email
+delivery, while monitor-specific content is composed in `monitors/notifications.py`.
 
 ## Deployment
 
