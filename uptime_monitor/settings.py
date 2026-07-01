@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "monitors",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -175,3 +176,8 @@ CELERY_BEAT_SCHEDULE = {
 # Resend (transactional email via HTTP API)
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "UptimeMonitor <noreply@bilalhasson.com>")
+NOTIFICATION_CATEGORIES = [
+    ("monitor_added", "Monitor added"),
+    ("monitor_down", "Monitor goes down"),
+    ("monitor_recovered", "Monitor recovers"),
+]

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Email Preferences — Uptime Monitor{% endblock %}
+
+{% block content %}
+<h1>Email Preferences</h1>
+
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
+    <fieldset>
+      <legend class="sr-only">Email notification preferences</legend>
+      {% for pref in preferences %}
+      <div class="form-group">
+        <label class="form-label">
+          <input type="checkbox" name="enabled" value="{{ pref.id }}"
+                 {% if pref.enabled %}checked{% endif %}>
+          {{ pref.label }}
+        </label>
+      </div>
+      {% empty %}
+      <p>No notification categories registered yet.</p>
+      {% endfor %}
+    </fieldset>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="/" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

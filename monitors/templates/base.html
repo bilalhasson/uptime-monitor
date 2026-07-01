@@ -44,6 +44,7 @@
     <div class="nav-links">
       {% if user.is_authenticated %}
         <span>{{ user.username }}</span>
+        <a href="{% url 'email-preferences' %}">Settings</a>
         <form method="post" action="{% url 'logout' %}" style="display:inline;">
           {% csrf_token %}
           <button type="submit" style="background:none;border:none;color:#1a1a1a;cursor:pointer;font:inherit;font-weight:500;padding:0;">Log out</button>
