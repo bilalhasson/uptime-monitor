@@ -914,6 +914,125 @@ class SSLDetailViewTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Uptime history graph tests (Chunk 12)
+# ---------------------------------------------------------------------------
+
+
+class ChartDataTests(TestCase):
+    def setUp(self):
+        from . import charts
+
+        self.charts = charts
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
+
+    def _log(self, success, rt=100, hours_ago=1):
+        log = CheckLog.objects.create(
+            monitor=self.monitor,
+            success=success,
+            status_code=200 if success else 500,
+            response_time_ms=rt if success else None,
+        )
+        CheckLog.objects.filter(pk=log.pk).update(
+            checked_at=timezone.now() - timedelta(hours=hours_ago)
+        )
+        return log
+
+    def test_resolve_range_valid(self):
+        self.assertEqual(self.charts.resolve_range("24h"), "24h")
+        self.assertEqual(self.charts.resolve_range("30d"), "30d")
+
+    def test_resolve_range_invalid_falls_back(self):
+        self.assertEqual(self.charts.resolve_range("bogus"), self.charts.DEFAULT_RANGE)
+        self.assertEqual(self.charts.resolve_range(None), self.charts.DEFAULT_RANGE)
+
+    def test_strip_has_one_bar_per_bucket(self):
+        strip = self.charts.build_uptime_strip(self.monitor, "24h")
+        self.assertEqual(len(strip["bars"]), 24)
+        strip7 = self.charts.build_uptime_strip(self.monitor, "7d")
+        self.assertEqual(len(strip7["bars"]), 7)
+
+    def test_empty_strip_all_nodata_color(self):
+        strip = self.charts.build_uptime_strip(self.monitor, "24h")
+        self.assertFalse(strip["has_data"])
+        self.assertIsNone(strip["overall_uptime"])
+        colors = {b["color"] for b in strip["bars"]}
+        self.assertEqual(colors, {self.charts.COLOR_NODATA})
+
+    def test_all_success_bucket_is_green(self):
+        self._log(True, hours_ago=1)
+        self._log(True, hours_ago=1)
+        strip = self.charts.build_uptime_strip(self.monitor, "24h")
+        colored = [b for b in strip["bars"] if b["color"] != self.charts.COLOR_NODATA]
+        self.assertEqual(len(colored), 1)
+        self.assertEqual(colored[0]["color"], self.charts.COLOR_UP)
+        self.assertEqual(strip["overall_uptime"], 100.0)
+
+    def test_all_fail_bucket_is_red(self):
+        self._log(False, hours_ago=1)
+        strip = self.charts.build_uptime_strip(self.monitor, "24h")
+        colored = [b for b in strip["bars"] if b["color"] != self.charts.COLOR_NODATA]
+        self.assertEqual(colored[0]["color"], self.charts.COLOR_DOWN)
+        self.assertEqual(strip["overall_uptime"], 0.0)
+
+    def test_mixed_bucket_is_amber(self):
+        self._log(True, hours_ago=1)
+        self._log(False, hours_ago=1)
+        strip = self.charts.build_uptime_strip(self.monitor, "24h")
+        colored = [b for b in strip["bars"] if b["color"] != self.charts.COLOR_NODATA]
+        self.assertEqual(colored[0]["color"], self.charts.COLOR_PARTIAL)
+        self.assertEqual(strip["overall_uptime"], 50.0)
+
+    def test_response_series_empty(self):
+        series = self.charts.build_response_series(self.monitor, "24h")
+        self.assertFalse(series["has_data"])
+
+    def test_response_series_builds_points(self):
+        self._log(True, rt=120, hours_ago=1)
+        self._log(True, rt=180, hours_ago=2)
+        series = self.charts.build_response_series(self.monitor, "24h")
+        self.assertTrue(series["has_data"])
+        self.assertEqual(len(series["markers"]), 2)
+        # y_max rounds up past the largest average (avg of 120 => 120 <= 250 step).
+        self.assertGreaterEqual(series["y_max"], 180)
+        self.assertIn(" ", series["points"])  # at least two coordinate pairs
+
+    def test_failed_checks_excluded_from_response_avg(self):
+        self._log(False, hours_ago=1)  # rt None
+        series = self.charts.build_response_series(self.monitor, "24h")
+        self.assertFalse(series["has_data"])
+
+
+class MonitorDetailGraphViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.monitor = Monitor.objects.create(owner=self.user, url="https://example.com")
+        self.client.login(username="alice", password="pass1234")
+
+    def test_default_range_in_context(self):
+        response = self.client.get(f"/monitors/{self.monitor.pk}/")
+        self.assertEqual(response.context["graph_range"], "7d")
+        self.assertEqual(len(response.context["uptime_strip"]["bars"]), 7)
+
+    def test_range_param_switches_bucketing(self):
+        response = self.client.get(f"/monitors/{self.monitor.pk}/?range=24h")
+        self.assertEqual(response.context["graph_range"], "24h")
+        self.assertEqual(len(response.context["uptime_strip"]["bars"]), 24)
+
+    def test_invalid_range_falls_back(self):
+        response = self.client.get(f"/monitors/{self.monitor.pk}/?range=nope")
+        self.assertEqual(response.context["graph_range"], "7d")
+
+    def test_renders_svg_strip(self):
+        CheckLog.objects.create(monitor=self.monitor, success=True, status_code=200, response_time_ms=100)
+        response = self.client.get(f"/monitors/{self.monitor.pk}/")
+        self.assertContains(response, "<svg")
+        self.assertContains(response, "Uptime history")
+        self.assertContains(response, "<polyline")
+
+
+# ---------------------------------------------------------------------------
 # Team sharing tests (Chunk 11)
 # ---------------------------------------------------------------------------
 

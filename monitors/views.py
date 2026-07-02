@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from teams.utils import get_active_team, user_teams
 
+from . import charts
 from .access import get_monitor_or_404
 from .forms import MonitorForm, SignupForm
 from .models import Monitor
@@ -88,6 +89,11 @@ def monitor_detail_view(request, monitor_id):
         elif monitor.ssl_error:
             ssl_status = "error"
 
+    # Uptime-history graphs (server-rendered inline SVG)
+    graph_range = charts.resolve_range(request.GET.get("range", charts.DEFAULT_RANGE))
+    uptime_strip = charts.build_uptime_strip(monitor, graph_range)
+    response_series = charts.build_response_series(monitor, graph_range)
+
     return render(request, "monitors/monitor_detail.html", {
         "monitor": monitor,
         "check_logs": check_logs_list,
@@ -95,6 +101,10 @@ def monitor_detail_view(request, monitor_id):
         "uptime_pct": uptime_pct,
         "avg_response_time": avg_response_time,
         "ssl_status": ssl_status,
+        "graph_range": graph_range,
+        "range_options": charts.range_options(graph_range),
+        "uptime_strip": uptime_strip,
+        "response_series": response_series,
     })
 
 
