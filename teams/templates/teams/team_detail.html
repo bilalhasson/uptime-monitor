@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }} — Uptime Monitor{% endblock %}
+
+{% block content %}
+<p style="margin-bottom:0.5rem;"><a href="{% url 'team-list' %}">&larr; All teams</a></p>
+<h1>{{ team.name }}</h1>
+
+{% for message in messages %}
+<div class="alert-success">{{ message }}</div>
+{% endfor %}
+
+{% if is_admin %}
+<div class="form-card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Team settings</h2>
+  <form method="post" action="{% url 'team-rename' team.id %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="id_name">Team name</label>
+      <input type="text" name="name" id="id_name" value="{{ team.name }}" class="form-input">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Rename</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="form-card" style="margin-top:1.5rem;">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Members</h2>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="text-align:left;border-bottom:2px solid #e0e0e0;">
+        <th style="padding:0.5rem 0.5rem 0.5rem 0;">User</th>
+        <th style="padding:0.5rem;">Role</th>
+        <th style="padding:0.5rem;text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in memberships %}
+      <tr style="border-bottom:1px solid #e0e0e0;">
+        <td style="padding:0.5rem 0.5rem 0.5rem 0;">{{ m.user.username }}{% if m.user == request.user %} <em>(you)</em>{% endif %}</td>
+        <td style="padding:0.5rem;">
+          {% if is_admin %}
+          <form method="post" action="{% url 'member-role' team.id m.user.id %}" style="display:inline;">
+            {% csrf_token %}
+            <select name="role" class="form-input" style="width:auto;display:inline;padding:0.25rem;" onchange="this.form.submit()">
+              {% for value, label in role_choices %}
+              <option value="{{ value }}" {% if m.role == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          {% else %}
+          {{ m.get_role_display }}
+          {% endif %}
+        </td>
+        <td style="padding:0.5rem;text-align:right;">
+          {% if is_admin and m.user != request.user %}
+          <form method="post" action="{% url 'member-remove' team.id m.user.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" style="font-size:0.8rem;padding:0.25rem 0.5rem;">Remove</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_admin %}
+<div class="form-card" style="margin-top:1.5rem;">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Invite a member</h2>
+  <form method="post" action="{% url 'team-invite' team.id %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ invite_form.email.id_for_label }}">Email</label>
+      {{ invite_form.email }}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ invite_form.role.id_for_label }}">Role</label>
+      {{ invite_form.role }}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Send invite</button>
+    </div>
+  </form>
+
+  {% if pending_invites %}
+  <h3 style="margin-top:1.5rem;font-size:0.95rem;">Pending invites</h3>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem;color:#555;">
+    {% for inv in pending_invites %}
+    <li>{{ inv.email }} ({{ inv.get_role_display }}) — expires {{ inv.expires_at|date:"M j, Y" }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="form-card" style="margin-top:1.5rem;">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Leave / delete</h2>
+  <div class="form-actions">
+    <form method="post" action="{% url 'team-leave' team.id %}" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary">Leave team</button>
+    </form>
+    {% if is_admin %}
+    <form method="post" action="{% url 'team-delete' team.id %}" style="display:inline;"
+          onsubmit="return confirm('Delete this team? Its monitors will revert to personal.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger">Delete team</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

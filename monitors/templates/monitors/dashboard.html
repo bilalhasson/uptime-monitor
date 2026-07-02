@@ -4,6 +4,9 @@
 
 {% block content %}
 <h1>Dashboard</h1>
+<p style="color:#666;margin-bottom:0.5rem;">
+  {% if active_team %}Viewing <strong>{{ active_team.name }}</strong> team monitors.{% else %}Viewing your <strong>personal</strong> monitors.{% endif %}
+</p>
 
 {% for message in messages %}
 <div class="alert-success" role="status">

@@ -911,3 +911,165 @@ class SSLDetailViewTests(TestCase):
         response = self.client.get(f"/monitors/{self.monitor.pk}/")
         self.assertEqual(response.context["ssl_status"], "warning")
         self.assertContains(response, "Expiring Soon")
+
+
+# ---------------------------------------------------------------------------
+# Team sharing tests (Chunk 11)
+# ---------------------------------------------------------------------------
+
+
+class TeamDashboardScopingTests(TestCase):
+    def setUp(self):
+        from teams.models import Team, TeamMembership
+
+        self.client = Client()
+        self.alice = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.team = Team.objects.create(name="Platform", created_by=self.alice)
+        TeamMembership.objects.create(
+            team=self.team, user=self.alice, role=TeamMembership.Role.ADMIN
+        )
+        self.personal = Monitor.objects.create(owner=self.alice, url="https://personal.com")
+        self.shared = Monitor.objects.create(
+            owner=self.alice, team=self.team, url="https://shared.com"
+        )
+        self.client.login(username="alice", password="pass1234")
+
+    def test_personal_context_lists_only_personal(self):
+        response = self.client.get("/")
+        monitors = set(response.context["monitors"])
+        self.assertEqual(monitors, {self.personal})
+        self.assertIsNone(response.context["active_team"])
+
+    def test_team_context_lists_only_team(self):
+        session = self.client.session
+        session["active_team_id"] = self.team.pk
+        session.save()
+        response = self.client.get("/")
+        monitors = set(response.context["monitors"])
+        self.assertEqual(monitors, {self.shared})
+        self.assertEqual(response.context["active_team"], self.team)
+
+    @patch("monitors.views.send_monitor_added_email")
+    def test_create_in_team_context_sets_team(self, _mock):
+        session = self.client.session
+        session["active_team_id"] = self.team.pk
+        session.save()
+        self.client.post("/", {"url": "https://new.com", "check_interval": 300})
+        monitor = Monitor.objects.get(url="https://new.com")
+        self.assertEqual(monitor.team, self.team)
+        self.assertEqual(monitor.owner, self.alice)
+
+    @patch("monitors.views.send_monitor_added_email")
+    def test_create_in_personal_context_no_team(self, _mock):
+        self.client.post("/", {"url": "https://new.com", "check_interval": 300})
+        monitor = Monitor.objects.get(url="https://new.com")
+        self.assertIsNone(monitor.team_id)
+
+
+class TeamMemberMonitorAccessTests(TestCase):
+    def setUp(self):
+        from teams.models import Team, TeamMembership
+
+        self.client = Client()
+        self.alice = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.bob = User.objects.create_user("bob", "bob@test.com", "pass1234")
+        self.carol = User.objects.create_user("carol", "carol@test.com", "pass1234")
+        self.team = Team.objects.create(name="Platform", created_by=self.alice)
+        TeamMembership.objects.create(
+            team=self.team, user=self.alice, role=TeamMembership.Role.ADMIN
+        )
+        TeamMembership.objects.create(team=self.team, user=self.bob)
+        self.shared = Monitor.objects.create(
+            owner=self.alice, team=self.team, url="https://shared.com"
+        )
+
+    def test_member_can_view_team_monitor(self):
+        self.client.login(username="bob", password="pass1234")
+        response = self.client.get(f"/monitors/{self.shared.pk}/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_member_can_edit_team_monitor(self):
+        self.client.login(username="bob", password="pass1234")
+        response = self.client.post(
+            f"/monitors/{self.shared.pk}/edit/",
+            {"url": "https://shared.com", "check_interval": 600},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.shared.refresh_from_db()
+        self.assertEqual(self.shared.check_interval, 600)
+
+    def test_non_member_cannot_view_team_monitor(self):
+        self.client.login(username="carol", password="pass1234")
+        response = self.client.get(f"/monitors/{self.shared.pk}/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_edit_can_move_monitor_to_personal(self):
+        self.client.login(username="alice", password="pass1234")
+        self.client.post(
+            f"/monitors/{self.shared.pk}/edit/",
+            {"url": "https://shared.com", "check_interval": 300, "team": ""},
+        )
+        self.shared.refresh_from_db()
+        self.assertIsNone(self.shared.team_id)
+
+    def test_edit_cannot_assign_to_foreign_team(self):
+        from teams.models import Team
+
+        foreign = Team.objects.create(name="Foreign")
+        self.client.login(username="alice", password="pass1234")
+        self.client.post(
+            f"/monitors/{self.shared.pk}/edit/",
+            {"url": "https://shared.com", "check_interval": 300, "team": foreign.pk},
+        )
+        self.shared.refresh_from_db()
+        # Not a member of `foreign`, so the choice is rejected → falls back to Personal.
+        self.assertIsNone(self.shared.team_id)
+
+
+class TeamNotificationFanoutTests(TestCase):
+    def setUp(self):
+        from teams.models import Team, TeamMembership
+
+        self.alice = User.objects.create_user("alice", "alice@test.com", "pass1234")
+        self.bob = User.objects.create_user("bob", "bob@test.com", "pass1234")
+        self.team = Team.objects.create(name="Platform", created_by=self.alice)
+        TeamMembership.objects.create(
+            team=self.team, user=self.alice, role=TeamMembership.Role.ADMIN
+        )
+        TeamMembership.objects.create(team=self.team, user=self.bob)
+        self.shared = Monitor.objects.create(
+            owner=self.alice, team=self.team, url="https://shared.com"
+        )
+        self.personal = Monitor.objects.create(owner=self.alice, url="https://personal.com")
+
+    @patch("monitors.notifications.send_notification")
+    def test_down_alert_fans_out_to_all_members(self, mock_send):
+        from .notifications import send_monitor_down_email
+
+        send_monitor_down_email(self.shared)
+        recipients = {call.kwargs["user"] for call in mock_send.call_args_list}
+        self.assertEqual(recipients, {self.alice, self.bob})
+
+    @patch("monitors.notifications.send_notification")
+    def test_recovery_alert_fans_out_to_all_members(self, mock_send):
+        from .notifications import send_monitor_recovery_email
+
+        send_monitor_recovery_email(self.shared)
+        recipients = {call.kwargs["user"] for call in mock_send.call_args_list}
+        self.assertEqual(recipients, {self.alice, self.bob})
+
+    @patch("monitors.notifications.send_notification")
+    def test_personal_monitor_alerts_only_owner(self, mock_send):
+        from .notifications import send_monitor_down_email
+
+        send_monitor_down_email(self.personal)
+        mock_send.assert_called_once()
+        self.assertEqual(mock_send.call_args.kwargs["user"], self.alice)
+
+    @patch("monitors.notifications.send_notification")
+    def test_added_alert_only_notifies_creator(self, mock_send):
+        from .notifications import send_monitor_added_email
+
+        send_monitor_added_email(self.shared)
+        mock_send.assert_called_once()
+        self.assertEqual(mock_send.call_args.kwargs["user"], self.alice)

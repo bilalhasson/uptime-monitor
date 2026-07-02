@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from monitors.models import Monitor
+from monitors.access import visible_monitors
 
 from .forms import StatusPageForm
 from .models import StatusPage, StatusPageMonitor
@@ -20,7 +20,7 @@ def statuspage_list_view(request):
 
 def _build_monitor_rows(user, status_page=None):
     """Build a list of dicts for the monitor selection UI."""
-    monitors = Monitor.objects.filter(owner=user)
+    monitors = visible_monitors(user)
     selected_map = {}
     if status_page:
         for entry in status_page.page_monitors.all():
@@ -40,7 +40,7 @@ def _build_monitor_rows(user, status_page=None):
 def _save_monitor_selections(request, status_page):
     """Parse POST data and save StatusPageMonitor entries."""
     status_page.page_monitors.all().delete()
-    monitors = Monitor.objects.filter(owner=request.user)
+    monitors = visible_monitors(request.user)
     position = 0
     for monitor in monitors:
         if request.POST.get(f"monitor_{monitor.pk}"):

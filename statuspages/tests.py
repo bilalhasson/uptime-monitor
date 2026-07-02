@@ -260,3 +260,35 @@ class StatusPagePublicViewTests(TestCase):
         )
         response = self.client.get(reverse("statuspage-public", args=["public"]))
         self.assertContains(response, "https://example.com")
+
+
+class StatusPageTeamMonitorTests(TestCase):
+    """A team monitor is selectable for a status page by any team member."""
+
+    def setUp(self):
+        from teams.models import Team, TeamMembership
+
+        self.alice = User.objects.create_user(username="alice", password="testpass123")
+        self.bob = User.objects.create_user(username="bob", password="testpass123")
+        self.team = Team.objects.create(name="Platform", created_by=self.alice)
+        TeamMembership.objects.create(
+            team=self.team, user=self.alice, role=TeamMembership.Role.ADMIN
+        )
+        TeamMembership.objects.create(team=self.team, user=self.bob)
+        self.shared = Monitor.objects.create(
+            owner=self.alice, team=self.team, url="https://shared.com"
+        )
+
+    def test_member_can_add_team_monitor_to_status_page(self):
+        self.client.login(username="bob", password="testpass123")
+        self.client.post(
+            reverse("statuspage-create"),
+            {
+                "title": "Bob Page",
+                "slug": "bob-page",
+                "is_published": True,
+                f"monitor_{self.shared.pk}": "1",
+            },
+        )
+        entry = StatusPageMonitor.objects.get()
+        self.assertEqual(entry.monitor, self.shared)

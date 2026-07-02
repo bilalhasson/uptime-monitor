@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Teams — Uptime Monitor{% endblock %}
+
+{% block content %}
+<h1>Teams</h1>
+
+{% for message in messages %}
+<div class="alert-success">{{ message }}</div>
+{% endfor %}
+
+<div class="form-card">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Your teams</h2>
+  {% if memberships %}
+  <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;">
+    <thead>
+      <tr style="text-align:left;border-bottom:2px solid #e0e0e0;">
+        <th style="padding:0.5rem 0.5rem 0.5rem 0;">Team</th>
+        <th style="padding:0.5rem;">Your role</th>
+        <th style="padding:0.5rem;text-align:right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in memberships %}
+      <tr style="border-bottom:1px solid #e0e0e0;">
+        <td style="padding:0.5rem 0.5rem 0.5rem 0;">
+          <a href="{% url 'team-detail' m.team.id %}">{{ m.team.name }}</a>
+        </td>
+        <td style="padding:0.5rem;">{{ m.get_role_display }}</td>
+        <td style="padding:0.5rem;text-align:right;">
+          <form method="post" action="{% url 'switch-team' %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="team_id" value="{{ m.team.id }}">
+            <button type="submit" class="btn btn-secondary" style="font-size:0.8rem;padding:0.25rem 0.5rem;">Switch to</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#666;margin-bottom:1rem;">You're not in any teams yet. Create one below to start sharing monitors.</p>
+  {% endif %}
+</div>
+
+<div class="form-card" style="margin-top:1.5rem;">
+  <h2 style="margin-bottom:1rem;font-size:1.1rem;">Create a team</h2>
+  <form method="post" action="{% url 'team-create' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.name.id_for_label }}">Team name</label>
+      {{ form.name }}
+      {% for error in form.name.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create team</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

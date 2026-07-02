@@ -14,6 +14,13 @@ class Monitor(models.Model):
         on_delete=models.CASCADE,
         related_name="monitors",
     )
+    team = models.ForeignKey(
+        "teams.Team",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="monitors",
+    )
     url = models.URLField(max_length=2048)
     check_interval = models.PositiveIntegerField(
         default=300, help_text="Check interval in seconds"

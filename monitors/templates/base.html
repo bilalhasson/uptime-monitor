@@ -44,6 +44,21 @@
     <div class="nav-links">
       {% if user.is_authenticated %}
         <span>{{ user.username }}</span>
+        {% if user_teams %}
+        <form method="post" action="{% url 'switch-team' %}" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <label class="sr-only" for="team-switcher">Active team</label>
+          <select id="team-switcher" name="team_id" onchange="this.form.submit()"
+                  style="font:inherit;padding:0.25rem;border:1px solid #ccc;border-radius:4px;">
+            <option value="" {% if not active_team %}selected{% endif %}>Personal</option>
+            {% for t in user_teams %}
+            <option value="{{ t.id }}" {% if active_team and active_team.id == t.id %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+        <a href="{% url 'team-list' %}">Teams</a>
         <a href="{% url 'statuspage-list' %}">Status Pages</a>
         <a href="{% url 'notification-settings' %}">Settings</a>
         <form method="post" action="{% url 'logout' %}" style="display:inline;">

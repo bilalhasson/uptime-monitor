@@ -1,7 +1,19 @@
 from notifications.dispatch import send_notification
 
 
+def _recipients(monitor):
+    """Users to alert about a monitor.
+
+    Team monitors alert every member (each via their own preferences and
+    channels); personal monitors alert just the owner.
+    """
+    if monitor.team_id:
+        return list(monitor.team.members.all())
+    return [monitor.owner]
+
+
 def send_monitor_added_email(monitor):
+    # Only the creator is told about a new monitor — not the whole team.
     send_notification(
         user=monitor.owner,
         subject=f"Monitor added: {monitor.url}",
@@ -16,42 +28,45 @@ def send_monitor_added_email(monitor):
 
 
 def send_monitor_down_email(monitor):
-    send_notification(
-        user=monitor.owner,
-        subject=f"ALERT: {monitor.url} is DOWN",
-        body=(
-            f"Your monitor for {monitor.url} is now DOWN.\n\n"
-            f"Last checked at: {monitor.last_checked_at}\n\n"
-            "We'll notify you when it recovers."
-        ),
-        category="monitor_down",
-        category_label="Monitor goes down",
-    )
+    for user in _recipients(monitor):
+        send_notification(
+            user=user,
+            subject=f"ALERT: {monitor.url} is DOWN",
+            body=(
+                f"Your monitor for {monitor.url} is now DOWN.\n\n"
+                f"Last checked at: {monitor.last_checked_at}\n\n"
+                "We'll notify you when it recovers."
+            ),
+            category="monitor_down",
+            category_label="Monitor goes down",
+        )
 
 
 def send_monitor_recovery_email(monitor):
-    send_notification(
-        user=monitor.owner,
-        subject=f"RECOVERED: {monitor.url} is back UP",
-        body=(
-            f"Your monitor for {monitor.url} has RECOVERED and is back UP.\n\n"
-            f"Last checked at: {monitor.last_checked_at}"
-        ),
-        category="monitor_recovered",
-        category_label="Monitor recovers",
-    )
+    for user in _recipients(monitor):
+        send_notification(
+            user=user,
+            subject=f"RECOVERED: {monitor.url} is back UP",
+            body=(
+                f"Your monitor for {monitor.url} has RECOVERED and is back UP.\n\n"
+                f"Last checked at: {monitor.last_checked_at}"
+            ),
+            category="monitor_recovered",
+            category_label="Monitor recovers",
+        )
 
 
 def send_ssl_expiring_email(monitor, days_remaining):
-    send_notification(
-        user=monitor.owner,
-        subject=f"SSL certificate expiring soon: {monitor.url}",
-        body=(
-            f"The SSL certificate for {monitor.url} expires in {days_remaining} days.\n\n"
-            f"Expiry date: {monitor.ssl_expiry_date}\n"
-            f"Issuer: {monitor.ssl_issuer}\n\n"
-            "Please renew the certificate to avoid service disruption."
-        ),
-        category="ssl_expiring",
-        category_label="SSL certificate expiring",
-    )
+    for user in _recipients(monitor):
+        send_notification(
+            user=user,
+            subject=f"SSL certificate expiring soon: {monitor.url}",
+            body=(
+                f"The SSL certificate for {monitor.url} expires in {days_remaining} days.\n\n"
+                f"Expiry date: {monitor.ssl_expiry_date}\n"
+                f"Issuer: {monitor.ssl_issuer}\n\n"
+                "Please renew the certificate to avoid service disruption."
+            ),
+            category="ssl_expiring",
+            category_label="SSL certificate expiring",
+        )
