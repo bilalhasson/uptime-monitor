@@ -205,6 +205,7 @@ if SENTRY_DSN:
     from sentry_sdk.integrations.logging import LoggingIntegration
     sentry_sdk.init(
         dsn=SENTRY_DSN,
+        release=os.environ.get("SENTRY_RELEASE"),
         traces_sample_rate=0.1,
         send_default_pii=False,
         environment="production" if not DEBUG else "development",
