@@ -31,5 +31,5 @@ celerybeat-schedule*
 .DS_Store
 Thumbs.db
 
-docs/plan.md
+docs/*
 .claude
