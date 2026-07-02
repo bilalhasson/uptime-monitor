@@ -85,6 +85,42 @@ Preferences are created automatically on first use. The `notifications` app is
 fully decoupled from `monitors` — it provides generic category-based email
 delivery, while monitor-specific content is composed in `monitors/notifications.py`.
 
+## Error tracking (Sentry)
+
+Errors and performance data are reported to [Sentry](https://sentry.io) via the
+`sentry-sdk[django,celery]` package. Sentry is enabled only when a DSN is set;
+if `SENTRY_DSN` is empty (the default), the SDK is never initialised and the app
+runs without any reporting.
+
+Set these environment variables to enable it:
+
+```
+SENTRY_DSN     = <your Sentry project DSN>
+SENTRY_RELEASE = <release identifier>   # optional; set automatically in CI
+```
+
+Configuration (see `uptime_monitor/settings.py`):
+
+- **Django & Celery integrations** — requests, background tasks, and unhandled
+  exceptions are captured automatically.
+- **Logging integration** — log records at `ERROR` level and above are sent as
+  Sentry events. Note this means handled errors that are logged via
+  `logger.exception(...)` (e.g. a single failing notification channel in
+  `notifications/dispatch.py`) still surface as Sentry issues.
+- **`traces_sample_rate=0.1`** — 10% of transactions are sampled for performance
+  monitoring.
+- **`send_default_pii=False`** — user PII is not attached to events.
+- **`environment`** — `production` when `DEBUG` is off, otherwise `development`.
+
+### Releases
+
+The CI workflow (`.github/workflows/ci.yml`) creates a Sentry release on every
+push to `main` after tests pass. It uses the Sentry CLI to register the release,
+associate commits (`set-commits --auto`), and finalize it, which links errors to
+the commit that introduced them. This requires a `SENTRY_AUTH_TOKEN` secret in
+the GitHub repo; the org (`bilal-hasson`) and project (`python-django`) are set
+in the workflow.
+
 ## Deployment
 
 Deployed on Railway. See [DEPLOY.md](DEPLOY.md) for setup instructions.
