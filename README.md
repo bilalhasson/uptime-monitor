@@ -1,134 +1,192 @@
-# Uptime Monitor
+<div align="center">
 
-A Django application that monitors website uptime by periodically checking URLs and recording results. Sends email notifications via [Resend](https://resend.com) when a monitor goes down or recovers.
+# ● Uptime Monitor
 
-**Live at [uptime.bilalhasson.com](https://uptime.bilalhasson.com)**
+### Know the moment your site goes down.
 
-## Prerequisites
+A production-grade website & API monitoring service — scheduled checks, instant
+multi-channel alerts, team status pages, and uptime history at a glance.
 
-- Python 3.12+
-- Docker (for Redis)
+[![Live](https://img.shields.io/badge/live-uptime.bilalhasson.com-2563eb?style=for-the-badge)](https://uptime.bilalhasson.com)
+&nbsp;
+[![CI](https://github.com/bilalhasson/uptime-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/bilalhasson/uptime-monitor/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.12-3776ab?logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-6.0-092e20?logo=django&logoColor=white)
 
-## Setup
+**[🔗 Live demo](https://uptime.bilalhasson.com)** · **[📦 Source](https://github.com/bilalhasson/uptime-monitor)**
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
+</div>
+
+![Uptime Monitor — know the moment your site goes down](.github/assets/banner.png)
+
+---
+
+## What it is
+
+Uptime Monitor watches your websites and APIs so you don't have to. Point it at a
+URL and it checks the endpoint on a schedule; when a healthy response turns into an
+error, a timeout, or a refused connection — or recovers — it tells you instantly,
+across every channel you've configured. Along the way it tracks response times,
+SSL-certificate expiry, and full uptime history, and it can publish a shareable
+public status page for your users.
+
+Commercial equivalents: UptimeRobot, Pingdom, Better Stack.
+
+---
+
+## Features
+
+### 📈 Uptime history at a glance
+Every monitor has a detail page with a **status-coloured uptime bar strip** and a
+**response-time trend**, over a 24h / 7d / 30d window — rendered as dependency-free
+inline SVG, aggregated efficiently in the database.
+
+![Uptime history graphs](.github/assets/monitor-detail.png)
+
+### 👥 Team sharing
+Create a **team**, invite teammates by email, and share monitors. Ad-hoc by design —
+solo users never see the concept. Admin/member **roles**, tokenised email invites,
+and a per-session team switcher. When a shared monitor goes down, **every member**
+is alerted via their own preferences.
+
+![Team management](.github/assets/teams.png)
+
+### 🔔 Multi-channel alerts
+Get notified the way your team actually works — **email** (Resend), **Slack**
+(OAuth), **webhooks**, and **SMS** (Twilio) — with per-category preferences
+(added / down / recovered / SSL expiring) that each user controls independently.
+
+![Notification channels](.github/assets/notifications.png)
+
+### 🌐 Public status pages
+Publish a clean, no-login **status page** for any set of monitors, with live
+status and uptime percentages. Great for keeping users informed during an incident.
+
+![Public status page](.github/assets/status-page.png)
+
+### And more
+- ⏱️ **Scheduled background checks** via Celery Beat — every monitor on its own interval
+- 🔒 **SSL-certificate-expiry monitoring** with early-warning alerts
+- ⏸️ **Pause / resume** monitors without losing history
+- 📊 **Dashboard** with at-a-glance status and per-context (personal vs team) scoping
+- 🧭 **Error tracking** wired to Sentry with release tracking via CI
+
+![Dashboard](.github/assets/dashboard.png)
+
+---
+
+## Tech stack
+
+| Area | Tech |
+|------|------|
+| **Backend** | Django 6, Python 3.12 |
+| **Async / scheduling** | Celery + Celery Beat, Redis (broker) |
+| **Database** | PostgreSQL (prod), SQLite (dev) |
+| **Notifications** | Resend (email), Twilio (SMS), Slack (OAuth), webhooks |
+| **Frontend** | Server-rendered Django templates, inline SVG charts (no JS framework) |
+| **Ops** | Railway, gunicorn, WhiteNoise, Sentry, GitHub Actions CI |
+
+---
+
+## Architecture
+
+The app runs as three long-lived processes plus two managed services — the
+interesting part is getting them to cooperate.
+
+```mermaid
+flowchart LR
+    subgraph app["Application (one codebase)"]
+        WEB["web<br/>gunicorn + Django"]
+        WORKER["worker<br/>Celery — runs checks"]
+        BEAT["beat<br/>Celery Beat — scheduler"]
+    end
+    PG[("PostgreSQL")]
+    REDIS[("Redis<br/>broker")]
+    SITES(["Monitored sites / APIs"])
+    USER(["You + your team"])
+
+    BEAT -->|enqueue checks| REDIS
+    REDIS -->|dispatch| WORKER
+    WORKER -->|HTTP probe| SITES
+    WORKER -->|write results| PG
+    WEB -->|read/write| PG
+    WORKER -->|on state change| NOTIFY["Email · Slack · Webhook · SMS"]
+    NOTIFY --> USER
+    USER -->|dashboard, status pages| WEB
 ```
 
-## Running locally
+Two apps are documented in depth (with diagrams):
+**[`notifications/`](notifications/README.md)** ·
+**[`teams/`](teams/README.md)**
 
-The quickest way to start everything (Redis, Django, Celery worker, Celery beat):
+---
+
+## Quickstart
+
+**Prerequisites:** Python 3.12+, Docker (for Redis).
 
 ```bash
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+
+# Start everything (Redis, web, Celery worker, Celery beat):
 ./dev.sh
 ```
 
-Press Ctrl+C to stop all services.
+Then open <http://localhost:8000>, sign up, and add a monitor. `./dev.sh` seeds a
+dev superuser (`admin` / `password`). Press Ctrl+C to stop.
 
-### Manual startup
-
-If you prefer running each process separately:
+<details>
+<summary>Run each process manually</summary>
 
 ```bash
-# Start Redis
-docker compose up -d
+docker compose up -d                                   # Redis
+python manage.py runserver                             # web
+celery -A uptime_monitor worker --loglevel=info        # worker
+celery -A uptime_monitor beat --loglevel=info          # scheduler
+```
+</details>
 
-# In separate terminals (with venv activated):
-python manage.py runserver
-celery -A uptime_monitor worker --loglevel=info
-celery -A uptime_monitor beat --loglevel=info
+---
 
-# To stop Redis
-docker compose down
+## Configuration
+
+All secrets are supplied via environment variables (never committed). The app runs
+fine locally with none of these set — features degrade gracefully (e.g. email is
+skipped and logged if `RESEND_API_KEY` is empty).
+
+| Variable | Purpose |
+|----------|---------|
+| `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` | Core Django |
+| `DATABASE_URL`, `REDIS_URL` | Postgres + Redis (provided by Railway plugins) |
+| `RESEND_API_KEY`, `DEFAULT_FROM_EMAIL` | Email notifications |
+| `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` | Slack OAuth |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS |
+| `SENTRY_DSN` | Error tracking |
+| `SITE_URL` | Public base URL (used for social/OG image links) |
+
+See **[DEPLOY.md](DEPLOY.md)** for the full Railway setup, custom domain, and
+production static-file handling.
+
+---
+
+## Testing
+
+```bash
+python manage.py test
 ```
 
-## Usage
+A suite of 243 tests covers models, views, ownership/team access, notification
+dispatch, the uptime-graph aggregation, and edge cases. CI runs it on every push
+and PR to `main`, and creates a Sentry release on green.
 
-1. **Sign up** at `/signup/` (or log in at `/login/`).
-2. **Add a monitor** — paste a URL into the input on the dashboard and click "Add".
-3. **View status** — monitors show a colored dot: green (up), red (down), or grey (pending). Status updates automatically as the background checker runs.
-4. **Pause/resume** — toggle monitoring on or off without deleting the monitor.
-5. **Monitor detail** — click a monitor to see check history, uptime percentage, and average response time.
-6. **Edit/delete** — update a monitor's settings or remove it entirely (all check history is deleted with it).
-7. **Email preferences** — visit `/settings/emails/` to control which notification types you receive.
+---
 
-## Email notifications
+<div align="center">
 
-Email alerts are sent via [Resend](https://resend.com) when a monitor transitions
-between **up** and **down** states. The first check (pending to up/down) is silent.
-A confirmation email is also sent when a new monitor is added.
+**[🔗 uptime.bilalhasson.com](https://uptime.bilalhasson.com)** · **[📦 GitHub](https://github.com/bilalhasson/uptime-monitor)**
 
-Set these environment variables to enable notifications:
+Built with Django, Celery, and Redis · deployed on Railway.
 
-```
-RESEND_API_KEY     = <your Resend API key>
-DEFAULT_FROM_EMAIL = "UptimeMonitor <noreply@yourdomain.com>"
-```
-
-When `RESEND_API_KEY` is empty (the default), notifications are skipped and a
-warning is logged. Monitor owners must have an email address on their user
-account to receive alerts.
-
-### Per-user preferences
-
-Users can opt out of individual notification categories at `/settings/emails/`.
-Three categories are available:
-
-- **Monitor added** — confirmation when a new monitor is created
-- **Monitor goes down** — alert when a monitored URL starts failing
-- **Monitor recovers** — alert when a monitored URL comes back up
-
-Preferences are created automatically on first use. The `notifications` app is
-fully decoupled from `monitors` — it provides generic category-based email
-delivery, while monitor-specific content is composed in `monitors/notifications.py`.
-
-## Error tracking (Sentry)
-
-Errors and performance data are reported to [Sentry](https://sentry.io) via the
-`sentry-sdk[django,celery]` package. Sentry is enabled only when a DSN is set;
-if `SENTRY_DSN` is empty (the default), the SDK is never initialised and the app
-runs without any reporting.
-
-Set these environment variables to enable it:
-
-```
-SENTRY_DSN     = <your Sentry project DSN>
-SENTRY_RELEASE = <release identifier>   # optional; set automatically in CI
-```
-
-Configuration (see `uptime_monitor/settings.py`):
-
-- **Django & Celery integrations** — requests, background tasks, and unhandled
-  exceptions are captured automatically.
-- **Logging integration** — log records at `ERROR` level and above are sent as
-  Sentry events. Note this means handled errors that are logged via
-  `logger.exception(...)` (e.g. a single failing notification channel in
-  `notifications/dispatch.py`) still surface as Sentry issues.
-- **`traces_sample_rate=0.1`** — 10% of transactions are sampled for performance
-  monitoring.
-- **`send_default_pii=False`** — user PII is not attached to events.
-- **`environment`** — `production` when `DEBUG` is off, otherwise `development`.
-
-### Releases
-
-The CI workflow (`.github/workflows/ci.yml`) creates a Sentry release on every
-push to `main` after tests pass. It uses the Sentry CLI to register the release,
-associate commits (`set-commits --auto`), and finalize it, which links errors to
-the commit that introduced them. This requires a `SENTRY_AUTH_TOKEN` secret in
-the GitHub repo; the org (`bilal-hasson`) and project (`python-django`) are set
-in the workflow.
-
-## Deployment
-
-Deployed on Railway. See [DEPLOY.md](DEPLOY.md) for setup instructions.
-
-## Credentials
-
-Production secrets (e.g. `SECRET_KEY`) are stored in **Bitwarden** under the
-`deploy/uptime-monitor` item — that vault is the source of truth for recovery
-and rotation. Live values are set as environment variables on Railway and are
-never committed to this repo. `DATABASE_URL` and `REDIS_URL` are provided by
-Railway's Postgres/Redis plugins, not stored in the vault.
+</div>
