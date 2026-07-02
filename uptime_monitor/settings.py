@@ -196,3 +196,20 @@ SLACK_CLIENT_SECRET = os.environ.get("SLACK_CLIENT_SECRET", "")
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
+
+# Sentry
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        environment="production" if not DEBUG else "development",
+        integrations=[
+            DjangoIntegration(middleware_spans=False),
+            LoggingIntegration(event_level="ERROR"),
+        ],
+    )
