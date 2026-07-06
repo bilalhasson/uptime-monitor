@@ -34,11 +34,22 @@ ALLOWED_HOSTS = [
     if h.strip()
 ]
 
+# Origins trusted for CSRF — must include the public domain(s) the browser
+# actually uses (e.g. the hibernate gateway's custom domain), since the proxy
+# rewrites the Host header. Comma-separated, each entry needs a scheme.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "https://uptime-monitor.demo.bilalhasson.com").split(",")
+    if o.strip()
+]
+
 # Railway provides the public domain at runtime; trust it automatically.
 RAILWAY_PUBLIC_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
 if RAILWAY_PUBLIC_DOMAIN:
     ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
-    CSRF_TRUSTED_ORIGINS = [f"https://{RAILWAY_PUBLIC_DOMAIN}", "https://uptime.bilalhasson.com"]
+    railway_origin = f"https://{RAILWAY_PUBLIC_DOMAIN}"
+    if railway_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(railway_origin)
 
 # Production security — only when DEBUG is off (Railway terminates TLS at its
 # load balancer and forwards X-Forwarded-Proto).
