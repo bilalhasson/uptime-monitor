@@ -7,13 +7,13 @@
 A production-grade website & API monitoring service — scheduled checks, instant
 multi-channel alerts, team status pages, and uptime history at a glance.
 
-[![Live](https://img.shields.io/badge/live-uptime.bilalhasson.com-2563eb?style=for-the-badge)](https://uptime.bilalhasson.com)
+[![Live](https://img.shields.io/badge/live-uptime--monitor.demo.bilalhasson.com-2563eb?style=for-the-badge)](https://uptime-monitor.demo.bilalhasson.com)
 &nbsp;
 [![CI](https://github.com/bilalhasson/uptime-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/bilalhasson/uptime-monitor/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-3776ab?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-6.0-092e20?logo=django&logoColor=white)
 
-**[🔗 Live demo](https://uptime.bilalhasson.com)** · **[📦 Source](https://github.com/bilalhasson/uptime-monitor)**
+**[🔗 Live demo](https://uptime-monitor.demo.bilalhasson.com)** · **[📦 Source](https://github.com/bilalhasson/uptime-monitor)**
 
 </div>
 
@@ -185,7 +185,7 @@ and PR to `main`, and creates a Sentry release on green.
 
 <div align="center">
 
-**[🔗 uptime.bilalhasson.com](https://uptime.bilalhasson.com)** · **[📦 GitHub](https://github.com/bilalhasson/uptime-monitor)**
+**[🔗 uptime-monitor.demo.bilalhasson.com](https://uptime-monitor.demo.bilalhasson.com)** · **[📦 GitHub](https://github.com/bilalhasson/uptime-monitor)**
 
 Built with Django, Celery, and Redis · deployed on Railway.
 

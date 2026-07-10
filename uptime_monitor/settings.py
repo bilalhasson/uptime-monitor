@@ -170,7 +170,7 @@ if "test" in sys.argv:
     )
 
 # Public base URL, used to build absolute URLs for social/OG image tags.
-SITE_URL = os.environ.get("SITE_URL", "https://uptime.bilalhasson.com")
+SITE_URL = os.environ.get("SITE_URL", "https://uptime-monitor.demo.bilalhasson.com")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field

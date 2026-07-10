@@ -70,9 +70,9 @@ Production secrets are stored in **Bitwarden** under a `deploy/<project>` item
 
 ## Custom domain
 
-The app is served at `uptime.bilalhasson.com` via a CNAME record:
+The app is served at `uptime-monitor.demo.bilalhasson.com` via a CNAME record:
 
-1. In Railway, open the **web** service → **Settings → Networking → Custom Domain** and add `uptime.bilalhasson.com`.
+1. In Railway, open the **web** service → **Settings → Networking → Custom Domain** and add `uptime-monitor.demo.bilalhasson.com`.
 2. At your DNS provider, create a **CNAME** record pointing `uptime` to the Railway-provided target (e.g. `*.up.railway.app`).
 3. Railway will automatically provision a TLS certificate once the CNAME propagates.
 
