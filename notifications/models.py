@@ -24,6 +24,7 @@ class NotificationChannel(models.Model):
         SLACK = "slack", "Slack"
         WEBHOOK = "webhook", "Webhook"
         SMS = "sms", "SMS"
+        PUSH_RELAY = "push_relay", "Web Push (Push Relay)"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -46,6 +47,10 @@ class NotificationChannel(models.Model):
 
     # SMS
     sms_phone_number = models.CharField(max_length=20, blank=True, default="")
+
+    # Web Push (Push Relay) — the subscriber label to notify on the Push Relay service.
+    # The service URL + send key are app-level settings (PUSH_RELAY_URL / PUSH_RELAY_SEND_KEY).
+    push_relay_label = models.CharField(max_length=100, blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
 

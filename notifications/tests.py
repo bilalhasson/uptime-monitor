@@ -358,6 +358,39 @@ class WebhookBackendTests(TestCase):
             send(ch, "Alert", "Body")
 
 
+class PushRelayBackendTests(TestCase):
+    @override_settings(PUSH_RELAY_URL="https://push.example.com", PUSH_RELAY_SEND_KEY="k")
+    @patch("notifications.backends.push_relay_backend.requests.post")
+    def test_posts_to_send_api(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=202, raise_for_status=lambda: None)
+        ch = NotificationChannel(push_relay_label="bilal")
+        from .backends.push_relay_backend import send
+        send(ch, "Alert", "Body text")
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "https://push.example.com/api/v1/send")
+        self.assertEqual(
+            kwargs["json"],
+            {"label": "bilal", "notification": {"title": "Alert", "body": "Body text"}},
+        )
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer k")
+
+    @override_settings(PUSH_RELAY_URL="", PUSH_RELAY_SEND_KEY="")
+    @patch("notifications.backends.push_relay_backend.requests.post")
+    def test_noop_when_unconfigured(self, mock_post):
+        ch = NotificationChannel(push_relay_label="bilal")
+        from .backends.push_relay_backend import send
+        send(ch, "Alert", "Body")
+        mock_post.assert_not_called()
+
+    @patch("notifications.backends.push_relay_backend.requests.post")
+    def test_noop_without_label(self, mock_post):
+        ch = NotificationChannel(push_relay_label="")
+        from .backends.push_relay_backend import send
+        send(ch, "Alert", "Body")
+        mock_post.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # Notification settings view tests
 # ---------------------------------------------------------------------------

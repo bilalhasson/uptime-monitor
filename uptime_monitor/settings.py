@@ -224,6 +224,11 @@ TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
 
+# Push Relay (Web Push) — self-hosted notification service. Both must be set for the
+# "Add Web Push" channel to appear.
+PUSH_RELAY_URL = os.environ.get("PUSH_RELAY_URL", "")
+PUSH_RELAY_SEND_KEY = os.environ.get("PUSH_RELAY_SEND_KEY", "")
+
 # Sentry
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN:

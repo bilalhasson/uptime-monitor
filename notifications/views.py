@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import SMSChannelForm, WebhookChannelForm
+from .forms import PushRelayChannelForm, SMSChannelForm, WebhookChannelForm
 from .models import NotificationChannel, NotificationPreference
 
 
@@ -32,6 +32,9 @@ def notification_settings_view(request):
     channels = NotificationChannel.objects.filter(user=request.user)
     slack_client_id = getattr(settings, "SLACK_CLIENT_ID", "")
     twilio_configured = bool(getattr(settings, "TWILIO_ACCOUNT_SID", ""))
+    push_relay_configured = bool(
+        getattr(settings, "PUSH_RELAY_URL", "") and getattr(settings, "PUSH_RELAY_SEND_KEY", "")
+    )
 
     return render(
         request,
@@ -41,6 +44,7 @@ def notification_settings_view(request):
             "channels": channels,
             "slack_client_id": slack_client_id,
             "twilio_configured": twilio_configured,
+            "push_relay_configured": push_relay_configured,
         },
     )
 
@@ -77,6 +81,23 @@ def add_sms_channel_view(request):
         form = SMSChannelForm()
 
     return render(request, "notifications/add_sms.html", {"form": form})
+
+
+@login_required
+def add_push_relay_channel_view(request):
+    if request.method == "POST":
+        form = PushRelayChannelForm(request.POST)
+        if form.is_valid():
+            channel = form.save(commit=False)
+            channel.user = request.user
+            channel.channel_type = NotificationChannel.ChannelType.PUSH_RELAY
+            channel.save()
+            messages.success(request, "Web Push channel added.")
+            return redirect("notification-settings")
+    else:
+        form = PushRelayChannelForm()
+
+    return render(request, "notifications/add_push_relay.html", {"form": form})
 
 
 @login_required

@@ -14,6 +14,19 @@ class WebhookChannelForm(forms.ModelForm):
         }
 
 
+class PushRelayChannelForm(forms.ModelForm):
+    class Meta:
+        model = NotificationChannel
+        fields = ("label", "push_relay_label")
+        widgets = {
+            "label": forms.TextInput(attrs={"placeholder": "e.g. My Browser", "class": "form-input"}),
+            "push_relay_label": forms.TextInput(attrs={"placeholder": "e.g. bilal", "class": "form-input"}),
+        }
+        help_texts = {
+            "push_relay_label": "The subscriber label you enabled on Push Relay (which browser to notify).",
+        }
+
+
 class SMSChannelForm(forms.ModelForm):
     class Meta:
         model = NotificationChannel

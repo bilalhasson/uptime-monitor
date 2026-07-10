@@ -86,6 +86,9 @@
     {% if twilio_configured %}
     <a href="{% url 'add-sms-channel' %}" class="btn btn-primary">Add SMS</a>
     {% endif %}
+    {% if push_relay_configured %}
+    <a href="{% url 'add-push-relay-channel' %}" class="btn btn-primary">Add Web Push</a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

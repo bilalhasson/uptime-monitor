@@ -12,11 +12,12 @@ def _register_backends():
     """Lazily import and register all backends."""
     if BACKENDS:
         return
-    from .backends import webhook_backend, slack_backend, sms_backend
+    from .backends import push_relay_backend, slack_backend, sms_backend, webhook_backend
 
     BACKENDS[NotificationChannel.ChannelType.WEBHOOK] = webhook_backend.send
     BACKENDS[NotificationChannel.ChannelType.SLACK] = slack_backend.send
     BACKENDS[NotificationChannel.ChannelType.SMS] = sms_backend.send
+    BACKENDS[NotificationChannel.ChannelType.PUSH_RELAY] = push_relay_backend.send
 
 
 def send_notification(user, subject, body, category=None, category_label=None):
