@@ -20,7 +20,7 @@ def _register_backends():
     BACKENDS[NotificationChannel.ChannelType.PUSH_RELAY] = push_relay_backend.send
 
 
-def send_notification(user, subject, body, category=None, category_label=None):
+def send_notification(user, subject, body, category=None, category_label=None, url=None):
     # 1. Check category preference
     if category:
         pref, _ = NotificationPreference.objects.get_or_create(
@@ -45,7 +45,7 @@ def send_notification(user, subject, body, category=None, category_label=None):
             logger.warning("No backend for channel type %s", channel.channel_type)
             continue
         try:
-            backend(channel, subject, body)
+            backend(channel, subject, body, url=url)
         except Exception:
             logger.exception(
                 "Failed to send via %s channel %s", channel.channel_type, channel.pk

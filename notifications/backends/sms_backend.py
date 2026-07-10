@@ -5,7 +5,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-def send(channel, subject, body):
+def send(channel, subject, body, url=None):
     account_sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
     auth_token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
     from_number = getattr(settings, "TWILIO_FROM_NUMBER", "")

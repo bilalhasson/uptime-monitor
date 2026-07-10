@@ -5,7 +5,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def send(channel, subject, body):
+def send(channel, subject, body, url=None):
     if not channel.slack_access_token or not channel.slack_channel_id:
         return
 

@@ -5,7 +5,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def send(channel, subject, body):
+def send(channel, subject, body, url=None):
     if not channel.webhook_url:
         return
 

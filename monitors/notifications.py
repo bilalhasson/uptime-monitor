@@ -1,4 +1,12 @@
+from django.conf import settings
+from django.urls import reverse
+
 from notifications.dispatch import send_notification
+
+
+def _monitor_url(monitor):
+    """Absolute URL to the monitor's detail page (click-to-open target for push)."""
+    return f"{settings.SITE_URL.rstrip('/')}{reverse('monitor-detail', args=[monitor.id])}"
 
 
 def _recipients(monitor):
@@ -24,6 +32,7 @@ def send_monitor_added_email(monitor):
         ),
         category="monitor_added",
         category_label="Monitor added",
+        url=_monitor_url(monitor),
     )
 
 
@@ -39,6 +48,7 @@ def send_monitor_down_email(monitor):
             ),
             category="monitor_down",
             category_label="Monitor goes down",
+            url=_monitor_url(monitor),
         )
 
 
@@ -53,6 +63,7 @@ def send_monitor_recovery_email(monitor):
             ),
             category="monitor_recovered",
             category_label="Monitor recovers",
+            url=_monitor_url(monitor),
         )
 
 
@@ -69,4 +80,5 @@ def send_ssl_expiring_email(monitor, days_remaining):
             ),
             category="ssl_expiring",
             category_label="SSL certificate expiring",
+            url=_monitor_url(monitor),
         )

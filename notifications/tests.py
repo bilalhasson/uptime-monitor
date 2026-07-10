@@ -365,13 +365,20 @@ class PushRelayBackendTests(TestCase):
         mock_post.return_value = MagicMock(status_code=202, raise_for_status=lambda: None)
         ch = NotificationChannel(push_relay_label="bilal")
         from .backends.push_relay_backend import send
-        send(ch, "Alert", "Body text")
+        send(ch, "Alert", "Body text", url="https://uptime.example/monitors/5/")
         mock_post.assert_called_once()
         args, kwargs = mock_post.call_args
         self.assertEqual(args[0], "https://push.example.com/api/v1/send")
         self.assertEqual(
             kwargs["json"],
-            {"label": "bilal", "notification": {"title": "Alert", "body": "Body text"}},
+            {
+                "label": "bilal",
+                "notification": {
+                    "title": "Alert",
+                    "body": "Body text",
+                    "url": "https://uptime.example/monitors/5/",
+                },
+            },
         )
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer k")
 
