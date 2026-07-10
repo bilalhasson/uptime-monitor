@@ -360,42 +360,35 @@ class WebhookBackendTests(TestCase):
 
 class PushRelayBackendTests(TestCase):
     @override_settings(PUSH_RELAY_URL="https://push.example.com", PUSH_RELAY_SEND_KEY="k")
-    @patch("notifications.backends.push_relay_backend.requests.post")
-    def test_posts_to_send_api(self, mock_post):
-        mock_post.return_value = MagicMock(status_code=202, raise_for_status=lambda: None)
+    @patch("notifications.backends.push_relay_backend.PushRelay")
+    def test_sends_via_sdk(self, MockPushRelay):
         ch = NotificationChannel(push_relay_label="bilal")
         from .backends.push_relay_backend import send
         send(ch, "Alert", "Body text", url="https://uptime.example/monitors/5/")
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        self.assertEqual(args[0], "https://push.example.com/api/v1/send")
-        self.assertEqual(
-            kwargs["json"],
-            {
-                "label": "bilal",
-                "notification": {
-                    "title": "Alert",
-                    "body": "Body text",
-                    "url": "https://uptime.example/monitors/5/",
-                },
-            },
+        # Client constructed with the configured base URL + key...
+        MockPushRelay.assert_called_once_with("https://push.example.com", "k")
+        # ...and the send delegates label + notification fields to the SDK.
+        MockPushRelay.return_value.send.assert_called_once_with(
+            "bilal",
+            title="Alert",
+            body="Body text",
+            url="https://uptime.example/monitors/5/",
         )
-        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer k")
 
     @override_settings(PUSH_RELAY_URL="", PUSH_RELAY_SEND_KEY="")
-    @patch("notifications.backends.push_relay_backend.requests.post")
-    def test_noop_when_unconfigured(self, mock_post):
+    @patch("notifications.backends.push_relay_backend.PushRelay")
+    def test_noop_when_unconfigured(self, MockPushRelay):
         ch = NotificationChannel(push_relay_label="bilal")
         from .backends.push_relay_backend import send
         send(ch, "Alert", "Body")
-        mock_post.assert_not_called()
+        MockPushRelay.assert_not_called()
 
-    @patch("notifications.backends.push_relay_backend.requests.post")
-    def test_noop_without_label(self, mock_post):
+    @patch("notifications.backends.push_relay_backend.PushRelay")
+    def test_noop_without_label(self, MockPushRelay):
         ch = NotificationChannel(push_relay_label="")
         from .backends.push_relay_backend import send
         send(ch, "Alert", "Body")
-        mock_post.assert_not_called()
+        MockPushRelay.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

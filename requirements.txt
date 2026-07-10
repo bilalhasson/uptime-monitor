@@ -9,3 +9,4 @@ requests==2.32.3
 resend==2.5.1
 twilio==9.4.3
 sentry-sdk[django,celery]
+push-relay @ git+https://github.com/bilalhasson/push-relay.git@python-sdk-v0.1.0#subdirectory=clients/python
